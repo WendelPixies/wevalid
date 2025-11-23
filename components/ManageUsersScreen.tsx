@@ -174,34 +174,12 @@ export const ManageUsersScreen = () => {
 
                                     <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
                                         {user.role !== 'admin' && (
-                                            <>
-                                                {user.role !== 'manager' ? (
-                                                    profile?.role === 'admin' && (
-                                                        <button
-                                                            onClick={() => handlePromoteToManager(user.id)}
-                                                            className="flex-1 bg-purple-50 text-purple-700 px-3 py-2 rounded-lg text-sm font-bold hover:bg-purple-100 transition-colors"
-                                                        >
-                                                            Promover a Gestor
-                                                        </button>
-                                                    )
-                                                ) : (
-                                                    profile?.role === 'admin' && (
-                                                        <button
-                                                            onClick={() => handleDemoteToStoreUser(user.id)}
-                                                            className="flex-1 bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-100 transition-colors"
-                                                        >
-                                                            Tornar Operador
-                                                        </button>
-                                                    )
-                                                )}
-
-                                                <button
-                                                    onClick={() => handleRemoveUser(user.id)}
-                                                    className="px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors"
-                                                >
-                                                    Remover Acesso
-                                                </button>
-                                            </>
+                                            <button
+                                                onClick={() => handleRemoveUser(user.id)}
+                                                className="px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors"
+                                            >
+                                                Remover Acesso
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -214,6 +192,7 @@ export const ManageUsersScreen = () => {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-6 w-full max-w-md shadow-xl">
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Editar Usuário</h3>
+
                         <label className="block mb-4">
                             <span className="text-slate-700 dark:text-slate-300 font-medium">Nome Completo</span>
                             <input
@@ -222,6 +201,49 @@ export const ManageUsersScreen = () => {
                                 onChange={e => setEditName(e.target.value)}
                             />
                         </label>
+
+                        {/* Role Management Section */}
+                        {editingUser.role !== 'admin' && (
+                            <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <label className="block mb-2">
+                                    <span className="text-slate-700 dark:text-slate-300 font-medium text-sm">Função</span>
+                                </label>
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${editingUser.role === 'manager' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                                        }`}>
+                                        {editingUser.role === 'manager' ? 'Gestor' : 'Operador'}
+                                    </span>
+                                </div>
+
+                                {/* Promotion/Demotion Buttons */}
+                                {editingUser.role === 'store_user' && (profile?.role === 'admin' || profile?.role === 'manager') && (
+                                    <button
+                                        onClick={() => {
+                                            handlePromoteToManager(editingUser.id);
+                                            setEditingUser(null);
+                                        }}
+                                        className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <span className="material-symbols-outlined text-sm">upgrade</span>
+                                        Promover a Gestor
+                                    </button>
+                                )}
+
+                                {editingUser.role === 'manager' && profile?.role === 'admin' && (
+                                    <button
+                                        onClick={() => {
+                                            handleDemoteToStoreUser(editingUser.id);
+                                            setEditingUser(null);
+                                        }}
+                                        className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <span className="material-symbols-outlined text-sm">downgrade</span>
+                                        Tornar Operador
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
                         <div className="flex gap-3 justify-end">
                             <button
                                 onClick={() => setEditingUser(null)}
