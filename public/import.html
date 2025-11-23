@@ -118,7 +118,7 @@
             log('Iniciando importação...');
 
             // 1. Carregar Lojas para mapear PDV -> ID
-            const { data: stores, error: storeError } = await supabase.from('stores').select('id, pdv_code, franchise_id');
+            const { data: stores, error: storeError } = await supabase.from('stores').select('id, name, pdv_code, franchise_id');
             if (storeError) {
                 log('Erro ao carregar lojas: ' + storeError.message, 'error');
                 btn.disabled = false;
@@ -126,8 +126,23 @@
             }
 
             const storeMap = {}; // PDV -> {id, franchise_id}
+
             stores.forEach(s => {
-                if (s.pdv_code) storeMap[s.pdv_code] = s;
+                // Prioridade 1: Campo pdv_code explícito
+                if (s.pdv_code) {
+                    storeMap[s.pdv_code.toString().trim()] = s;
+                }
+
+                // Prioridade 2: Extrair do nome (ex: "19387 - Loja")
+                // Pega a primeira parte numérica do nome
+                const nameMatch = s.name.match(/^(\d+)/);
+                if (nameMatch) {
+                    const extractedPdv = nameMatch[1];
+                    // Só adiciona se não houver conflito ou se pdv_code estiver vazio
+                    if (!storeMap[extractedPdv]) {
+                        storeMap[extractedPdv] = s;
+                    }
+                }
             });
 
             log(`Lojas carregadas: ${stores.length}. PDVs mapeados: ${Object.keys(storeMap).length}`);
