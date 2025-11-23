@@ -12,7 +12,7 @@
 <body class="bg-gray-50 min-h-screen p-8">
     <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-800">Importar Planilha de Estoque</h1>
+            <h1 class="text-2xl font-bold text-gray-800">Importar Planilha de Estoque (Rápido)</h1>
             <a href="/dash.html" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">&larr; Voltar ao
                 Dashboard</a>
         </div>
@@ -63,7 +63,6 @@
 
         let parsedData = [];
 
-        // Verificar autenticação ao carregar
         async function checkAuth() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
@@ -115,9 +114,9 @@
             btn.disabled = true;
             btn.textContent = 'Processando...';
 
-            log('Iniciando importação...');
+            log('Iniciando importação otimizada (Lotes de 100)...');
 
-            // 1. Carregar Lojas para mapear PDV -> ID
+            // 1. Carregar Lojas
             const { data: stores, error: storeError } = await supabase.from('stores').select('id, name, pdv_code, franchise_id');
             if (storeError) {
                 log('Erro ao carregar lojas: ' + storeError.message, 'error');
@@ -125,34 +124,28 @@
                 return;
             }
 
-            const storeMap = {}; // PDV -> {id, franchise_id}
-
+            const storeMap = {};
             stores.forEach(s => {
-                // Prioridade 1: Campo pdv_code explícito
-                if (s.pdv_code) {
-                    storeMap[s.pdv_code.toString().trim()] = s;
-                }
-
-                // Prioridade 2: Extrair do nome (ex: "19387 - Loja")
-                // Pega a primeira parte numérica do nome
+                if (s.pdv_code) storeMap[s.pdv_code.toString().trim()] = s;
                 const nameMatch = s.name.match(/^(\d+)/);
                 if (nameMatch) {
                     const extractedPdv = nameMatch[1];
-                    // Só adiciona se não houver conflito ou se pdv_code estiver vazio
-                    if (!storeMap[extractedPdv]) {
-                        storeMap[extractedPdv] = s;
-                    }
+                    if (!storeMap[extractedPdv]) storeMap[extractedPdv] = s;
                 }
             });
 
             log(`Lojas carregadas: ${stores.length}. PDVs mapeados: ${Object.keys(storeMap).length}`);
 
-            let successCount = 0;
+            const BATCH_SIZE = 100;
+            let productsBatch = [];
+            let inventoryBatch = [];
+            let processedCount = 0;
             let errorCount = 0;
 
-            for (const row of parsedData) {
+            for (let i = 0; i < parsedData.length; i++) {
+                const row = parsedData[i];
+
                 try {
-                    // Mapear colunas (ajuste os nomes conforme seu CSV exato)
                     const sku = row['SKU']?.split('-')[0].trim();
                     const description = row['DESCRICAO'];
                     const category = row['CATEGORIA'];
@@ -161,25 +154,8 @@
                     const stockTransit = parseInt(row['ESTOQUE EM TRANSITO'] || '0');
                     const totalStock = stockCurrent + stockTransit;
 
-                    if (!sku || !pdv) {
-                        // log(`Linha ignorada: SKU ou PDV faltando.`, 'error');
-                        continue;
-                    }
+                    if (!sku || !pdv) continue;
 
-                    // 1. Upsert Product
-                    const { data: product, error: prodError } = await supabase
-                        .from('products')
-                        .upsert({
-                            code: sku,
-                            description: description,
-                            category: category
-                        }, { onConflict: 'code' })
-                        .select()
-                        .single();
-
-                    if (prodError) throw new Error(`Erro produto ${sku}: ${prodError.message}`);
-
-                    // 2. Encontrar Loja
                     const store = storeMap[pdv];
                     if (!store) {
                         log(`Loja PDV ${pdv} não encontrada.`, 'error');
@@ -187,51 +163,58 @@
                         continue;
                     }
 
-                    // 3. Inserir/Atualizar Estoque
-                    const { data: existingItem } = await supabase
-                        .from('inventory_items')
-                        .select('id')
-                        .eq('store_id', store.id)
-                        .eq('product_code', sku)
-                        .maybeSingle();
+                    // Add to batches
+                    productsBatch.push({
+                        code: sku,
+                        description: description,
+                        category: category
+                    });
 
-                    const inventoryData = {
+                    inventoryBatch.push({
                         store_id: store.id,
                         franchise_id: store.franchise_id,
                         product_code: sku,
                         quantity: totalStock,
                         updated_at: new Date().toISOString()
-                    };
+                    });
 
-                    let invError;
-                    if (existingItem) {
-                        const { error } = await supabase
+                    // Process Batch if full or last item
+                    if (productsBatch.length >= BATCH_SIZE || i === parsedData.length - 1) {
+                        // Upsert Products
+                        const { error: prodError } = await supabase
+                            .from('products')
+                            .upsert(productsBatch, { onConflict: 'code', ignoreDuplicates: false });
+
+                        if (prodError) throw new Error(`Erro lote produtos: ${prodError.message}`);
+
+                        // Upsert Inventory
+                        const { error: invError } = await supabase
                             .from('inventory_items')
-                            .update(inventoryData)
-                            .eq('id', existingItem.id);
-                        invError = error;
-                    } else {
-                        const { error } = await supabase
-                            .from('inventory_items')
-                            .insert(inventoryData);
-                        invError = error;
+                            .upsert(inventoryBatch, { onConflict: 'store_id, product_code' });
+
+                        if (invError) throw new Error(`Erro lote estoque: ${invError.message}`);
+
+                        processedCount += productsBatch.length;
+                        log(`Processados: ${processedCount} itens...`);
+
+                        // Clear batches
+                        productsBatch = [];
+                        inventoryBatch = [];
                     }
-
-                    if (invError) throw new Error(`Erro estoque ${sku}: ${invError.message}`);
-
-                    successCount++;
-                    if (successCount % 10 === 0) log(`Processados: ${successCount}...`);
 
                 } catch (err) {
                     log(err.message, 'error');
                     errorCount++;
+                    // Clear batches on error to avoid stuck loop, though ideally we'd retry or skip
+                    productsBatch = [];
+                    inventoryBatch = [];
                 }
             }
 
-            log(`Importação concluída! Sucessos: ${successCount}, Erros: ${errorCount}`);
+            log(`Importação concluída! Processados: ${processedCount}, Erros (Lojas não encontradas): ${errorCount}`);
             btn.disabled = false;
             btn.textContent = 'Importar Dados';
-            alert('Importação finalizada! Verifique o log.');
+            alert('Importação finalizada!');
         };
     </script>
 </body>
