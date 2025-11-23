@@ -154,11 +154,17 @@
             currentUser = await checkAuth();
             if (!currentUser) return;
 
-            const { data: profile } = await supabase
+            const { data: profile, error: profileError } = await supabase
                 .from('user_profiles')
-                .select('*, franchises(name)')
+                .select('*')
                 .eq('id', currentUser.id)
                 .single();
+
+            if (profileError) {
+                console.error('Profile error:', profileError);
+                alert('Erro ao carregar perfil: ' + profileError.message);
+                return;
+            }
 
             if (!profile) {
                 alert('Perfil não encontrado');
