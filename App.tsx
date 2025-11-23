@@ -119,7 +119,7 @@ const LoginScreen = () => {
 
   useEffect(() => {
     if (user && profile) {
-      if (profile.status === 'pending') return; // ProtectedRoute handles this, but good to have here too
+      // if (profile.status === 'pending') return; // Allow redirect so ProtectedRoute shows the pending screen
       if (profile.role === 'admin') navigate('/dashboard-general');
       else if (profile.role === 'manager') navigate('/dashboard-franchise');
       else navigate('/dashboard-store');
