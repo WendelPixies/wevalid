@@ -660,14 +660,22 @@ const StoreDashboard = () => {
       // Fetch store name
       if (isAdminView && location.state?.storeName) {
         // Already have name
-      } else if (!isAdminView && profile?.stores) {
-        const s = profile.stores.find(s => s.id === currentStoreId);
-        if (s) setStoreName(s.name);
       } else {
-        supabase.from('stores').select('name').eq('id', currentStoreId).single()
-          .then(({ data }) => {
-            if (data) setStoreName(data.name);
-          });
+        let found = false;
+        if (!isAdminView && profile?.stores) {
+          const s = profile.stores.find(s => s.id === currentStoreId);
+          if (s) {
+            setStoreName(s.name);
+            found = true;
+          }
+        }
+
+        if (!found) {
+          supabase.from('stores').select('name').eq('id', currentStoreId).single()
+            .then(({ data }) => {
+              if (data) setStoreName(data.name);
+            });
+        }
       }
     } else {
       setLoading(false);
