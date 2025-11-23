@@ -572,6 +572,7 @@ const AddItemScreen = () => {
           <span className="text-slate-700 dark:text-slate-300 font-medium">Código do Produto *</span>
           <div className="flex mt-1">
             <input
+              type="number"
               className="form-input flex-1 rounded-l-lg border border-r-0 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-3 disabled:bg-gray-100 dark:disabled:bg-gray-700"
               value={formData.code}
               onChange={e => setFormData({ ...formData, code: e.target.value })}
