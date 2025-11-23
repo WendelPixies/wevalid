@@ -16,6 +16,15 @@
         .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
+
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+
+        body.modal-active {
+            overflow-x: hidden;
+            overflow-y: visible !important;
+        }
     </style>
 </head>
 
@@ -31,7 +40,19 @@
                         <p class="text-sm text-purple-100" id="userInfo">Carregando...</p>
                     </div>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex items-center gap-2">
+                    <!-- Admin Controls -->
+                    <div id="adminControls" class="hidden flex gap-2 mr-2 border-r pr-2 border-white/30">
+                        <button onclick="openFranchiseModal()"
+                            class="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-all">
+                            + Franquia
+                        </button>
+                        <button onclick="openStoreModal()"
+                            class="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-all">
+                            + Loja
+                        </button>
+                    </div>
+
                     <a href="/import.html"
                         class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all flex items-center gap-2 text-sm font-medium">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -117,7 +138,7 @@
                 </div>
             </div>
 
-            <!-- Category Ranking (New) -->
+            <!-- Category Ranking -->
             <div class="bg-white rounded-lg shadow lg:col-span-2">
                 <div class="p-4 border-b">
                     <h2 class="text-lg font-semibold text-gray-800">Ranking por Categoria</h2>
@@ -140,6 +161,134 @@
         </div>
     </main>
 
+    <!-- MODALS -->
+
+    <!-- Franchise Modal -->
+    <div id="franchiseModal"
+        class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold">Nova Franquia</p>
+                    <div class="modal-close cursor-pointer z-50" onclick="closeModal('franchiseModal')">
+                        <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                            viewBox="0 0 18 18">
+                            <path
+                                d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="franchiseName">Nome da
+                        Franquia</label>
+                    <input
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        id="franchiseName" type="text" placeholder="Ex: Franquia SP">
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button onclick="saveFranchise()"
+                        class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Store Modal -->
+    <div id="storeModal"
+        class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold">Nova Loja</p>
+                    <div class="modal-close cursor-pointer z-50" onclick="closeModal('storeModal')">
+                        <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                            viewBox="0 0 18 18">
+                            <path
+                                d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Franquia</label>
+                    <select id="storeFranchiseSelect"
+                        class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Nome da Loja</label>
+                    <input
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        id="storeName" type="text" placeholder="Ex: Loja Centro">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Código PDV (Importante para
+                        Importação)</label>
+                    <input
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        id="storePdv" type="text" placeholder="Ex: 14451">
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button onclick="saveStore()"
+                        class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Edit Modal -->
+    <div id="userModal"
+        class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-lg mx-auto rounded shadow-lg z-50 overflow-y-auto">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold">Editar Usuário</p>
+                    <div class="modal-close cursor-pointer z-50" onclick="closeModal('userModal')">
+                        <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                            viewBox="0 0 18 18">
+                            <path
+                                d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+                <input type="hidden" id="editUserId">
+                <div class="mb-4">
+                    <p id="editUserName" class="font-semibold text-lg"></p>
+                    <p id="editUserEmail" class="text-sm text-gray-500"></p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Cargo</label>
+                    <select id="editUserRole" onchange="toggleUserFields()"
+                        class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        <option value="admin">Administrador</option>
+                        <option value="manager">Gestor</option>
+                        <option value="store_user">Operador de Loja</option>
+                    </select>
+                </div>
+                <div id="editFranchiseField" class="mb-4 hidden">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Franquia</label>
+                    <select id="editUserFranchise" onchange="loadStoresForUser()"
+                        class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></select>
+                </div>
+                <div id="editStoresField" class="mb-4 hidden">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Lojas (Selecione múltiplas com
+                        Ctrl)</label>
+                    <select id="editUserStores" multiple
+                        class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-32"></select>
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button onclick="saveUser()"
+                        class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Salvar
+                        Alterações</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
@@ -155,7 +304,7 @@
         let allProducts = [];
         let allStores = [];
 
-        // Check auth
+        // --- Auth & Init ---
         async function checkAuth() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
@@ -165,13 +314,11 @@
             return session.user;
         }
 
-        // Logout
         window.logout = async function () {
             await supabase.auth.signOut();
             window.location.href = '/dash-login.html';
         };
 
-        // Load initial data
         async function loadData() {
             currentUser = await checkAuth();
             if (!currentUser) return;
@@ -182,111 +329,46 @@
                 .eq('id', currentUser.id)
                 .single();
 
-            if (profileError) {
-                console.error('Profile error:', profileError);
-                alert('Erro ao carregar perfil: ' + profileError.message);
-                return;
-            }
-
-            if (!profile) {
-                alert('Perfil não encontrado');
+            if (profileError || !profile) {
+                alert('Erro ao carregar perfil: ' + (profileError?.message || 'Não encontrado'));
                 return;
             }
 
             currentProfile = profile;
             document.getElementById('userInfo').textContent = `${profile.full_name || profile.email} - ${getRoleName(profile.role)}`;
 
-            // Admin: load all franchises
+            // Show Admin Controls
             if (profile.role === 'admin') {
-                const { data: franchises } = await supabase
-                    .from('franchises')
-                    .select('*')
-                    .order('name');
-
-                allFranchises = franchises || [];
-                populateFranchiseFilter();
+                document.getElementById('adminControls').classList.remove('hidden');
                 document.getElementById('franchiseFilterContainer').classList.remove('hidden');
 
-                const { data: stores } = await supabase
-                    .from('stores')
-                    .select('*')
-                    .order('name');
+                // Load all franchises for filters and modals
+                const { data: franchises } = await supabase.from('franchises').select('*').order('name');
+                allFranchises = franchises || [];
+
+                const { data: stores } = await supabase.from('stores').select('*').order('name');
                 allStores = stores || [];
             } else {
-                // Manager/Store User: only their franchise stores
                 if (!profile.franchise_id) {
                     alert('Usuário sem franquia associada');
                     return;
                 }
-
-                const { data: stores } = await supabase
-                    .from('stores')
-                    .select('*')
-                    .eq('franchise_id', profile.franchise_id)
-                    .order('name');
+                const { data: stores } = await supabase.from('stores').select('*').eq('franchise_id', profile.franchise_id).order('name');
                 allStores = stores || [];
             }
 
+            populateFranchiseFilter();
             populateStoreFilter();
             await loadDashboardData();
         }
 
-        function getRoleName(role) {
-            const names = { admin: 'Administrador', manager: 'Gestor', store_user: 'Operador' };
-            return names[role] || role;
-        }
-
-        function populateFranchiseFilter() {
-            const select = document.getElementById('franchiseFilter');
-            select.innerHTML = '<option value="all">Todas as Franquias</option>';
-            allFranchises.forEach(f => {
-                const option = document.createElement('option');
-                option.value = f.id;
-                option.textContent = f.name;
-                select.appendChild(option);
-            });
-        }
-
-        function populateStoreFilter() {
-            const select = document.getElementById('storeFilter');
-            select.innerHTML = '<option value="all">Todas as Lojas</option>';
-            allStores.forEach(s => {
-                const option = document.createElement('option');
-                option.value = s.id;
-                option.textContent = s.name;
-                select.appendChild(option);
-            });
-        }
-
-        window.filterByFranchise = async function () {
-            const selectedFranchise = document.getElementById('franchiseFilter').value;
-
-            if (selectedFranchise === 'all') {
-                const { data: stores } = await supabase.from('stores').select('*').order('name');
-                allStores = stores || [];
-            } else {
-                const { data: stores } = await supabase
-                    .from('stores')
-                    .select('*')
-                    .eq('franchise_id', selectedFranchise)
-                    .order('name');
-                allStores = stores || [];
-            }
-
-            populateStoreFilter();
-            document.getElementById('storeFilter').value = 'all';
-            await loadDashboardData();
-        };
-
-        window.filterByStore = async function () {
-            updateDashboard();
-        };
-
+        // --- Data Loading ---
         async function loadDashboardData() {
             const selectedFranchise = currentProfile.role === 'admin'
                 ? document.getElementById('franchiseFilter').value
                 : currentProfile.franchise_id;
 
+            // Load Employees
             let query = supabase.from('user_profiles').select('*, user_stores(stores(id, name))').eq('status', 'approved');
             if (selectedFranchise !== 'all') query = query.eq('franchise_id', selectedFranchise);
             const { data: employees } = await query;
@@ -296,6 +378,7 @@
                 stores: e.user_stores?.map(us => us.stores) || []
             })) || [];
 
+            // Load Products
             query = supabase.from('inventory_items').select('*, products(description, category, unit_cost), stores(name)').order('expiry_date', { ascending: true });
             if (selectedFranchise !== 'all') query = query.eq('franchise_id', selectedFranchise);
             const { data: products } = await query;
@@ -310,6 +393,7 @@
             updateDashboard();
         }
 
+        // --- Rendering ---
         function updateDashboard() {
             const selectedStore = document.getElementById('storeFilter').value;
             let filteredEmployees = allEmployees;
@@ -342,38 +426,6 @@
             renderTransferSuggestions(allProducts);
         }
 
-        function renderCategoryRanking(products) {
-            const container = document.getElementById('categoryRanking');
-            if (products.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 py-8 col-span-3">Nenhum dado disponível</p>';
-                return;
-            }
-
-            const categories = {};
-            products.forEach(p => {
-                const cat = p.category || 'Sem Categoria';
-                if (!categories[cat]) categories[cat] = { count: 0, value: 0 };
-                categories[cat].count += p.quantity || 0;
-                categories[cat].value += (p.total_cost || 0);
-            });
-
-            const sortedCategories = Object.entries(categories)
-                .sort(([, a], [, b]) => b.count - a.count)
-                .slice(0, 6);
-
-            container.innerHTML = sortedCategories.map(([name, data], index) => `
-                <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm font-bold text-gray-600">#${index + 1} ${name}</span>
-                        <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">${data.count} itens</span>
-                    </div>
-                    <div class="text-right">
-                        <span class="text-sm font-semibold text-green-600">R$ ${data.value.toFixed(2)}</span>
-                    </div>
-                </div>
-            `).join('');
-        }
-
         function renderEmployees(employees) {
             const container = document.getElementById('employeesList');
             if (employees.length === 0) {
@@ -385,10 +437,22 @@
                 const roleColors = { admin: 'bg-red-100 text-red-700', manager: 'bg-purple-100 text-purple-700', store_user: 'bg-blue-100 text-blue-700' };
                 const storeNames = emp.role === 'manager' ? 'Todas as lojas' : emp.stores.map(s => s.name).join(', ') || 'Sem loja';
 
+                // Edit button only for admins
+                const editBtn = currentProfile.role === 'admin' ? `
+                    <button onclick="openUserModal('${emp.id}')" class="ml-2 text-gray-400 hover:text-purple-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                    </button>
+                ` : '';
+
                 return `
                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
-                        <div>
-                            <p class="font-semibold text-gray-800">${emp.full_name || 'Sem nome'}</p>
+                        <div class="flex-1">
+                            <div class="flex items-center">
+                                <p class="font-semibold text-gray-800">${emp.full_name || 'Sem nome'}</p>
+                                ${editBtn}
+                            </div>
                             <p class="text-sm text-gray-500">${emp.email}</p>
                             <p class="text-xs text-gray-400">${storeNames}</p>
                         </div>
@@ -398,13 +462,13 @@
             }).join('');
         }
 
+        // ... (renderProducts, renderCategoryRanking, renderTransferSuggestions remain same as previous version) ...
         function renderProducts(products) {
             const container = document.getElementById('productsList');
             if (products.length === 0) {
                 container.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhum produto encontrado</p>';
                 return;
             }
-
             container.innerHTML = products.slice(0, 20).map(product => {
                 const expiryDate = new Date(product.expiry_date);
                 const today = new Date();
@@ -412,7 +476,6 @@
                 let urgencyColor = 'text-green-600';
                 if (daysUntilExpiry <= 7) urgencyColor = 'text-red-600 font-bold';
                 else if (daysUntilExpiry <= 30) urgencyColor = 'text-amber-600';
-
                 return `
                     <div class="p-3 bg-gray-50 rounded-lg mb-2">
                         <div class="flex justify-between items-start mb-1">
@@ -431,48 +494,63 @@
             }).join('');
         }
 
+        function renderCategoryRanking(products) {
+            const container = document.getElementById('categoryRanking');
+            if (products.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-8 col-span-3">Nenhum dado disponível</p>';
+                return;
+            }
+            const categories = {};
+            products.forEach(p => {
+                const cat = p.category || 'Sem Categoria';
+                if (!categories[cat]) categories[cat] = { count: 0, value: 0 };
+                categories[cat].count += p.quantity || 0;
+                categories[cat].value += (p.total_cost || 0);
+            });
+            const sortedCategories = Object.entries(categories)
+                .sort(([, a], [, b]) => b.count - a.count)
+                .slice(0, 6);
+            container.innerHTML = sortedCategories.map(([name, data], index) => `
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-bold text-gray-600">#${index + 1} ${name}</span>
+                        <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">${data.count} itens</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-sm font-semibold text-green-600">R$ ${data.value.toFixed(2)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         function renderTransferSuggestions(products) {
             const container = document.getElementById('transferSuggestions');
-
-            // Logic: Find stores with LOW stock (< 5) and match with stores with HIGH stock (> 20) of same product
             const LOW_STOCK_THRESHOLD = 5;
             const HIGH_STOCK_THRESHOLD = 20;
-
             const suggestions = [];
-
-            // Group products by code
             const productsByCode = {};
             products.forEach(p => {
                 if (!productsByCode[p.product_code]) productsByCode[p.product_code] = [];
                 productsByCode[p.product_code].push(p);
             });
-
             Object.entries(productsByCode).forEach(([code, items]) => {
                 const lowStockStores = items.filter(i => (i.quantity || 0) <= LOW_STOCK_THRESHOLD);
                 const highStockStores = items.filter(i => (i.quantity || 0) >= HIGH_STOCK_THRESHOLD);
-
                 if (lowStockStores.length > 0 && highStockStores.length > 0) {
                     lowStockStores.forEach(low => {
-                        // Find best source (highest stock)
                         const sources = highStockStores
                             .filter(h => h.store_id !== low.store_id)
                             .sort((a, b) => b.quantity - a.quantity);
-
                         if (sources.length > 0) {
-                            suggestions.push({
-                                product: low,
-                                sources: sources
-                            });
+                            suggestions.push({ product: low, sources: sources });
                         }
                     });
                 }
             });
-
             if (suggestions.length === 0) {
                 container.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhuma sugestão de transferência baseada em estoque.</p>';
                 return;
             }
-
             container.innerHTML = suggestions.slice(0, 10).map(s => {
                 return `
                     <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-3">
@@ -493,6 +571,200 @@
                 `;
             }).join('');
         }
+
+        // --- Helpers ---
+        function getRoleName(role) {
+            const names = { admin: 'Administrador', manager: 'Gestor', store_user: 'Operador' };
+            return names[role] || role;
+        }
+
+        function populateFranchiseFilter() {
+            const select = document.getElementById('franchiseFilter');
+            select.innerHTML = '<option value="all">Todas as Franquias</option>';
+            allFranchises.forEach(f => {
+                const option = document.createElement('option');
+                option.value = f.id;
+                option.textContent = f.name;
+                select.appendChild(option);
+            });
+        }
+
+        function populateStoreFilter() {
+            const select = document.getElementById('storeFilter');
+            select.innerHTML = '<option value="all">Todas as Lojas</option>';
+            allStores.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s.id;
+                option.textContent = s.name;
+                select.appendChild(option);
+            });
+        }
+
+        window.filterByFranchise = async function () {
+            const selectedFranchise = document.getElementById('franchiseFilter').value;
+            if (selectedFranchise === 'all') {
+                const { data: stores } = await supabase.from('stores').select('*').order('name');
+                allStores = stores || [];
+            } else {
+                const { data: stores } = await supabase.from('stores').select('*').eq('franchise_id', selectedFranchise).order('name');
+                allStores = stores || [];
+            }
+            populateStoreFilter();
+            document.getElementById('storeFilter').value = 'all';
+            await loadDashboardData();
+        };
+
+        window.filterByStore = async function () {
+            updateDashboard();
+        };
+
+        // --- Admin Actions ---
+        window.openFranchiseModal = function () {
+            toggleModal('franchiseModal');
+        }
+
+        window.saveFranchise = async function () {
+            const name = document.getElementById('franchiseName').value;
+            if (!name) return alert('Nome obrigatório');
+
+            const { error } = await supabase.from('franchises').insert({ name });
+            if (error) alert('Erro: ' + error.message);
+            else {
+                alert('Franquia criada!');
+                toggleModal('franchiseModal');
+                location.reload();
+            }
+        }
+
+        window.openStoreModal = function () {
+            const select = document.getElementById('storeFranchiseSelect');
+            select.innerHTML = allFranchises.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+            toggleModal('storeModal');
+        }
+
+        window.saveStore = async function () {
+            const name = document.getElementById('storeName').value;
+            const franchiseId = document.getElementById('storeFranchiseSelect').value;
+            const pdv = document.getElementById('storePdv').value;
+
+            if (!name || !franchiseId) return alert('Campos obrigatórios');
+
+            const { error } = await supabase.from('stores').insert({ name, franchise_id: franchiseId, pdv_code: pdv });
+            if (error) alert('Erro: ' + error.message);
+            else {
+                alert('Loja criada!');
+                toggleModal('storeModal');
+                location.reload();
+            }
+        }
+
+        // --- User Edit Logic ---
+        window.openUserModal = function (userId) {
+            const user = allEmployees.find(e => e.id === userId);
+            if (!user) return;
+
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editUserName').textContent = user.full_name;
+            document.getElementById('editUserEmail').textContent = user.email;
+            document.getElementById('editUserRole').value = user.role;
+
+            // Populate Franchises
+            const franchiseSelect = document.getElementById('editUserFranchise');
+            franchiseSelect.innerHTML = '<option value="">Selecione...</option>' +
+                allFranchises.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+            franchiseSelect.value = user.franchise_id || '';
+
+            toggleUserFields();
+            loadStoresForUser(user.stores.map(s => s.id));
+
+            toggleModal('userModal');
+        }
+
+        window.toggleUserFields = function () {
+            const role = document.getElementById('editUserRole').value;
+            const franchiseField = document.getElementById('editFranchiseField');
+            const storesField = document.getElementById('editStoresField');
+
+            if (role === 'admin') {
+                franchiseField.classList.add('hidden');
+                storesField.classList.add('hidden');
+            } else {
+                franchiseField.classList.remove('hidden');
+                if (role === 'store_user') storesField.classList.remove('hidden');
+                else storesField.classList.add('hidden');
+            }
+        }
+
+        window.loadStoresForUser = async function (selectedStoreIds = []) {
+            const franchiseId = document.getElementById('editUserFranchise').value;
+            const storesSelect = document.getElementById('editUserStores');
+            storesSelect.innerHTML = '';
+
+            if (!franchiseId) return;
+
+            const { data: stores } = await supabase.from('stores').select('*').eq('franchise_id', franchiseId).order('name');
+            if (stores) {
+                storesSelect.innerHTML = stores.map(s => {
+                    const selected = selectedStoreIds.includes(s.id) ? 'selected' : '';
+                    return `<option value="${s.id}" ${selected}>${s.name}</option>`;
+                }).join('');
+            }
+        }
+
+        window.saveUser = async function () {
+            const userId = document.getElementById('editUserId').value;
+            const role = document.getElementById('editUserRole').value;
+            const franchiseId = document.getElementById('editUserFranchise').value;
+
+            const updates = { role };
+            if (role !== 'admin') updates.franchise_id = franchiseId;
+            else updates.franchise_id = null;
+
+            // Update Profile
+            const { error } = await supabase.from('user_profiles').update(updates).eq('id', userId);
+            if (error) return alert('Erro ao atualizar perfil: ' + error.message);
+
+            // Update Stores if store_user
+            if (role === 'store_user') {
+                const selectedOptions = document.getElementById('editUserStores').selectedOptions;
+                const storeIds = Array.from(selectedOptions).map(opt => opt.value);
+
+                // Delete old
+                await supabase.from('user_stores').delete().eq('user_id', userId);
+
+                // Insert new
+                if (storeIds.length > 0) {
+                    const { error: storeError } = await supabase.from('user_stores').insert(
+                        storeIds.map(sid => ({ user_id: userId, store_id: sid }))
+                    );
+                    if (storeError) alert('Erro ao atualizar lojas: ' + storeError.message);
+                }
+            }
+
+            alert('Usuário atualizado!');
+            toggleModal('userModal');
+            location.reload();
+        }
+
+        // --- Modal Utils ---
+        window.toggleModal = function (modalID) {
+            const modal = document.getElementById(modalID);
+            modal.classList.toggle('opacity-0');
+            modal.classList.toggle('pointer-events-none');
+            document.body.classList.toggle('modal-active');
+        }
+
+        window.closeModal = function (modalID) {
+            toggleModal(modalID);
+        }
+
+        // Close on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(el => {
+            el.addEventListener('click', function () {
+                const modal = el.closest('.modal');
+                toggleModal(modal.id);
+            });
+        });
 
         loadData();
     </script>
