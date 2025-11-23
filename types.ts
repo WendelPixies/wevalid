@@ -2,21 +2,28 @@ export interface ProductCatalogItem {
   id: string;
   code: string;
   description: string;
+  unit_cost?: number;
 }
 
 export interface InventoryItem {
   id: string;
   store_id: string;
+  franchise_id?: string; // Added
   product_code: string;
   product_description?: string; // Joined from products table
   quantity: number;
   expiry_date: string; // YYYY-MM-DD
+  total_cost?: number; // Added
   created_at?: string;
 }
 
 export interface Franchise {
   id: string;
   name: string;
+  manager_name?: string;
+  manager_email?: string;
+  phone?: string;
+  is_active?: boolean;
 }
 
 export interface Store {

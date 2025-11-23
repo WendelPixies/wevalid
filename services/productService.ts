@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { InventoryItem, ProductCatalogItem } from '../types';
+import { InventoryItem, ProductCatalogItem, Franchise } from '../types';
 
 // Fetch inventory items for a specific store
 export const getStoreInventory = async (storeId: string): Promise<InventoryItem[]> => {
@@ -8,7 +8,8 @@ export const getStoreInventory = async (storeId: string): Promise<InventoryItem[
     .select(`
       *,
       products (
-        description
+        description,
+        unit_cost
       )
     `)
     .eq('store_id', storeId)
@@ -21,7 +22,7 @@ export const getStoreInventory = async (storeId: string): Promise<InventoryItem[
 
   return data.map((item: any) => ({
     ...item,
-    product_description: item.products?.description || 'Produto não encontrado'
+    product_description: item.products?.description || 'Produto não encontrado',
   }));
 };
 
@@ -32,7 +33,8 @@ export const getAllInventory = async (): Promise<InventoryItem[]> => {
     .select(`
       *,
       products (
-        description
+        description,
+        unit_cost
       ),
       stores (
         name
@@ -53,13 +55,8 @@ export const getAllInventory = async (): Promise<InventoryItem[]> => {
 };
 
 // Add new inventory item
-export const addInventoryItem = async (item: Omit<InventoryItem, 'id' | 'created_at'>) => {
-  // First, ensure the product exists in the catalog or use the provided description
-  // For this MVP, if the product doesn't exist in catalog, we might want to add it or just fail.
-  // The requirement says: "Ao digitar o código... buscar automaticamente a DESCRIÇÃO... a partir da base".
-  // It also implies we can save.
-
-  // Let's check if product exists
+export const addInventoryItem = async (item: Omit<InventoryItem, 'id' | 'created_at'> & { unit_cost?: number }) => {
+  // 1. Ensure product exists and update/insert description and cost
   const { data: product } = await supabase
     .from('products')
     .select('code')
@@ -67,24 +64,40 @@ export const addInventoryItem = async (item: Omit<InventoryItem, 'id' | 'created
     .single();
 
   if (!product) {
-    // If product doesn't exist, create it with the description provided (if any)
-    // or maybe we should strictly require it.
-    // For now, let's auto-create it if description is present
-    if (item.product_description) {
-      await supabase.from('products').insert({
-        code: item.product_code,
-        description: item.product_description
-      });
+    // Create product
+    await supabase.from('products').insert({
+      code: item.product_code,
+      description: item.product_description || '',
+      unit_cost: item.unit_cost || 0
+    });
+  } else {
+    // Update product cost/description if provided
+    const updates: any = {};
+    if (item.product_description) updates.description = item.product_description;
+    if (item.unit_cost !== undefined) updates.unit_cost = item.unit_cost;
+
+    if (Object.keys(updates).length > 0) {
+      await supabase.from('products').update(updates).eq('code', item.product_code);
     }
   }
 
+  // 2. Fetch franchise_id from store if not provided
+  let franchiseId = item.franchise_id;
+  if (!franchiseId) {
+    const { data: store } = await supabase.from('stores').select('franchise_id').eq('id', item.store_id).single();
+    if (store) franchiseId = store.franchise_id;
+  }
+
+  // 3. Insert Inventory Item
   const { data, error } = await supabase
     .from('inventory_items')
     .insert([{
       store_id: item.store_id,
+      franchise_id: franchiseId,
       product_code: item.product_code,
       quantity: item.quantity,
-      expiry_date: item.expiry_date
+      expiry_date: item.expiry_date,
+      total_cost: item.total_cost || (item.quantity * (item.unit_cost || 0))
     }])
     .select()
     .single();
@@ -193,15 +206,15 @@ export const deleteStore = async (id: string) => {
 // --- Franchise Services ---
 
 export const getFranchises = async () => {
-  const { data, error } = await supabase.from('franchises').select('*');
+  const { data, error } = await supabase.from('franchises').select('*').order('name');
   if (error) throw error;
   return data;
 };
 
-export const addFranchise = async (name: string) => {
+export const addFranchise = async (franchise: Partial<Franchise>) => {
   const { data, error } = await supabase
     .from('franchises')
-    .insert([{ name }])
+    .insert([franchise])
     .select()
     .single();
 

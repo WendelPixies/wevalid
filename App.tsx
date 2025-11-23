@@ -341,17 +341,22 @@ const GeneralDashboard = () => {
 // 3.2 Add Franchise Screen
 const AddFranchiseScreen = () => {
   const navigate = useNavigate();
-  const [name, setName] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    manager_name: '',
+    manager_email: '',
+    phone: ''
+  });
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
-    if (!name.trim()) {
+    if (!formData.name.trim()) {
       alert("Digite o nome da franquia");
       return;
     }
     setLoading(true);
     try {
-      await addFranchise(name);
+      await addFranchise(formData);
       alert("Franquia criada com sucesso!");
       navigate('/dashboard-general');
     } catch (e) {
@@ -373,9 +378,38 @@ const AddFranchiseScreen = () => {
           <span className="text-slate-700 dark:text-slate-300 font-medium">Nome da Franquia *</span>
           <input
             className="form-input w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-3"
-            value={name}
-            onChange={e => setName(e.target.value)}
+            value={formData.name}
+            onChange={e => setFormData({ ...formData, name: e.target.value })}
             placeholder="Ex: Grupo Boticário Sul"
+          />
+        </label>
+        <label className="block">
+          <span className="text-slate-700 dark:text-slate-300 font-medium">Nome do Responsável</span>
+          <input
+            className="form-input w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-3"
+            value={formData.manager_name}
+            onChange={e => setFormData({ ...formData, manager_name: e.target.value })}
+            placeholder="Nome do gestor principal"
+          />
+        </label>
+        <label className="block">
+          <span className="text-slate-700 dark:text-slate-300 font-medium">Email do Responsável</span>
+          <input
+            type="email"
+            className="form-input w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-3"
+            value={formData.manager_email}
+            onChange={e => setFormData({ ...formData, manager_email: e.target.value })}
+            placeholder="email@exemplo.com"
+          />
+        </label>
+        <label className="block">
+          <span className="text-slate-700 dark:text-slate-300 font-medium">Telefone</span>
+          <input
+            type="tel"
+            className="form-input w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-3"
+            value={formData.phone}
+            onChange={e => setFormData({ ...formData, phone: e.target.value })}
+            placeholder="(00) 00000-0000"
           />
         </label>
       </main>
@@ -507,6 +541,7 @@ const AddItemScreen = () => {
     description: '',
     quantity: '',
     expiryDate: '',
+    unitCost: '',
   });
   const [loadingProduct, setLoadingProduct] = useState(false);
 
@@ -516,7 +551,12 @@ const AddItemScreen = () => {
         code: editItem.product_code,
         description: editItem.product_description || '',
         quantity: editItem.quantity.toString(),
-        expiryDate: editItem.expiry_date
+        expiryDate: editItem.expiry_date,
+        unitCost: '', // We don't have unit cost in editItem yet unless we fetch it, but let's leave blank or fetch
+      });
+      // Fetch unit cost if editing
+      getProductByCode(editItem.product_code).then(p => {
+        if (p && p.unit_cost) setFormData(prev => ({ ...prev, unitCost: p.unit_cost?.toString() || '' }));
       });
     }
   }, [editItem]);
@@ -526,7 +566,11 @@ const AddItemScreen = () => {
     setLoadingProduct(true);
     const product = await getProductByCode(formData.code);
     if (product) {
-      setFormData(prev => ({ ...prev, description: product.description }));
+      setFormData(prev => ({
+        ...prev,
+        description: product.description,
+        unitCost: product.unit_cost?.toString() || ''
+      }));
     }
     setLoadingProduct(false);
   };
@@ -547,13 +591,21 @@ const AddItemScreen = () => {
           quantity: parseInt(formData.quantity),
           expiry_date: formData.expiryDate
         });
+        // Also update product cost if changed? For now, let's assume yes if provided
+        if (formData.unitCost) {
+          // We need a way to update product cost separately or addInventoryItem handles it.
+          // Since updateInventoryItem only updates inventory, we might need a separate call or update addInventoryItem logic to be used for updates too?
+          // For simplicity in this MVP, we won't update cost on edit of inventory item unless we add a specific function.
+          // Let's just focus on adding new items with cost for now as requested.
+        }
       } else {
         await addInventoryItem({
           store_id: storeId,
           product_code: formData.code,
           product_description: formData.description,
           quantity: parseInt(formData.quantity),
-          expiry_date: formData.expiryDate
+          expiry_date: formData.expiryDate,
+          unit_cost: formData.unitCost ? parseFloat(formData.unitCost) : undefined
         });
       }
       navigate(-1);
@@ -597,15 +649,30 @@ const AddItemScreen = () => {
           />
         </label>
 
-        <label className="block">
-          <span className="text-slate-700 dark:text-slate-300 font-medium">Quantidade *</span>
-          <input
-            type="number"
-            className="form-input w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-3"
-            value={formData.quantity}
-            onChange={e => setFormData({ ...formData, quantity: e.target.value })}
-          />
-        </label>
+        <div className="grid grid-cols-2 gap-4">
+          <label className="block">
+            <span className="text-slate-700 dark:text-slate-300 font-medium">Quantidade *</span>
+            <input
+              type="number"
+              className="form-input w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-3"
+              value={formData.quantity}
+              onChange={e => setFormData({ ...formData, quantity: e.target.value })}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-slate-700 dark:text-slate-300 font-medium">Custo Unitário (R$)</span>
+            <input
+              type="number"
+              step="0.01"
+              className="form-input w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-3"
+              value={formData.unitCost}
+              onChange={e => setFormData({ ...formData, unitCost: e.target.value })}
+              placeholder="0.00"
+              disabled={!!editItem}
+            />
+          </label>
+        </div>
 
         <label className="block">
           <span className="text-slate-700 dark:text-slate-300 font-medium">Data de Validade *</span>
