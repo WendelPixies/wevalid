@@ -35,188 +35,253 @@
 
         <div id="preview" class="hidden mb-6 overflow-x-auto">
             <h3 class="font-semibold mb-2">Pré-visualização (5 primeiras linhas)</h3>
-            <table class="min-w-full divide-y divide-gray-200 text-sm">
-                <thead class="bg-gray-50" id="previewHead"></thead>
-                <tbody class="bg-white divide-y divide-gray-200" id="previewBody"></tbody>
-            </table>
-        </div>
+            <!DOCTYPE html>
+            <html lang="pt-BR">
 
-        <div class="flex gap-4">
-            <button onclick="processImport()" id="btnImport"
-                class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled>
-                Importar Dados
-            </button>
-            <div id="status" class="flex items-center text-sm font-medium"></div>
-        </div>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Importar Dados - WeValid</title>
+                <script src="https://cdn.tailwindcss.com"></script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+            </head>
 
-        <div id="log"
-            class="mt-6 p-4 bg-gray-900 text-green-400 font-mono text-xs rounded-lg h-64 overflow-y-auto hidden"></div>
-    </div>
+            <body class="bg-gray-50 min-h-screen p-8">
+                <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-2xl font-bold text-gray-800">Importar Planilha de Estoque (Rápido)</h1>
+                        <a href="/dash.html" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">&larr;
+                            Voltar ao
+                            Dashboard</a>
+                    </div>
 
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+                    <div class="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <h3 class="font-semibold text-blue-800 mb-2">Instruções:</h3>
+                        <ul class="list-disc list-inside text-sm text-blue-700 space-y-1">
+                            <li>Salve sua planilha como arquivo <strong>.CSV</strong>.</li>
+                            <li>Colunas necessárias: <strong>SKU, DESCRICAO, CATEGORIA, PDV, ESTOQUE ATUAL, ESTOQUE EM
+                                    TRANSITO</strong>.</li>
+                            <li>O sistema usará sua conta logada para realizar a importação.</li>
+                        </ul>
+                    </div>
 
-        const supabaseUrl = 'https://acensrxfxzqozakkklmy.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZW5zcnhmeHpxb3pha2trbG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2ODc2NDUsImV4cCI6MjA3OTI2MzY0NX0.rRsWLCmIcoyKkE5Qh_et53wO_xzLriOjrsfU0Rs85Lo';
-        const supabase = createClient(supabaseUrl, supabaseKey);
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Selecione o arquivo CSV</label>
+                        <input type="file" id="csvFile" accept=".csv"
+                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    </div>
 
-        let parsedData = [];
+                    <div id="preview" class="hidden mb-6 overflow-x-auto">
+                        <h3 class="font-semibold mb-2">Pré-visualização (5 primeiras linhas)</h3>
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50" id="previewHead"></thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="previewBody"></tbody>
+                        </table>
+                    </div>
 
-        async function checkAuth() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                alert('Você precisa estar logado para importar dados.');
-                window.location.href = '/dash-login.html';
-                return;
-            }
-            console.log('Usuário autenticado:', session.user.email);
-        }
-        checkAuth();
+                    <div class="flex flex-col gap-4">
+                        <button onclick="processImport()" id="btnImport"
+                            class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-md transition-all"
+                            disabled>
+                            Importar Dados
+                        </button>
 
-        document.getElementById('csvFile').addEventListener('change', function (e) {
-            const file = e.target.files[0];
-            if (!file) return;
+                        <!-- Progress Bar -->
+                        <div id="progressContainer"
+                            class="hidden w-full bg-gray-200 rounded-full h-4 dark:bg-gray-700 mt-2">
+                            <div id="progressBar" class="bg-blue-600 h-4 rounded-full transition-all duration-300"
+                                style="width: 0%"></div>
+                        </div>
+                        <div id="status" class="text-sm font-medium text-gray-600 text-center h-6"></div>
+                    </div>
+                </div>
 
-            Papa.parse(file, {
-                header: true,
-                skipEmptyLines: true,
-                complete: function (results) {
-                    parsedData = results.data;
-                    showPreview(results.data.slice(0, 5), results.meta.fields);
-                    document.getElementById('btnImport').disabled = false;
-                    log(`Arquivo carregado: ${results.data.length} linhas encontradas.`);
-                }
-            });
-        });
+                <script type="module">
+                    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-        function showPreview(data, fields) {
-            const head = document.getElementById('previewHead');
-            const body = document.getElementById('previewBody');
-            document.getElementById('preview').classList.remove('hidden');
+                    const supabaseUrl = 'https://acensrxfxzqozakkklmy.supabase.co';
+                    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZW5zcnhmeHpxb3pha2trbG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2ODc2NDUsImV4cCI6MjA3OTI2MzY0NX0.rRsWLCmIcoyKkE5Qh_et53wO_xzLriOjrsfU0Rs85Lo';
+                    const supabase = createClient(supabaseUrl, supabaseKey);
 
-            head.innerHTML = `<tr>${fields.map(f => `<th class="px-3 py-2 text-left">${f}</th>`).join('')}</tr>`;
-            body.innerHTML = data.map(row => `
+                    let parsedData = [];
+
+                    async function checkAuth() {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session) {
+                            alert('Você precisa estar logado para importar dados.');
+                            window.location.href = '/dash-login.html';
+                            return;
+                        }
+                        console.log('Usuário autenticado:', session.user.email);
+                    }
+                    checkAuth();
+
+                    document.getElementById('csvFile').addEventListener('change', function (e) {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        Papa.parse(file, {
+                            header: true,
+                            skipEmptyLines: true,
+                            complete: function (results) {
+                                parsedData = results.data;
+                                showPreview(results.data.slice(0, 5), results.meta.fields);
+                                document.getElementById('btnImport').disabled = false;
+                                updateStatus(`Arquivo carregado: ${results.data.length} linhas encontradas.`);
+                            }
+                        });
+                    });
+
+                    function showPreview(data, fields) {
+                        const head = document.getElementById('previewHead');
+                        const body = document.getElementById('previewBody');
+                        document.getElementById('preview').classList.remove('hidden');
+
+                        head.innerHTML = `<tr>${fields.map(f => `<th class="px-3 py-2 text-left">${f}</th>`).join('')}</tr>`;
+                        body.innerHTML = data.map(row => `
                 <tr>${fields.map(f => `<td class="px-3 py-2 whitespace-nowrap">${row[f] || ''}</td>`).join('')}</tr>
             `).join('');
-        }
-
-        function log(msg, type = 'info') {
-            const logDiv = document.getElementById('log');
-            logDiv.classList.remove('hidden');
-            const color = type === 'error' ? 'text-red-400' : 'text-green-400';
-            logDiv.innerHTML += `<div class="${color}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
-            logDiv.scrollTop = logDiv.scrollHeight;
-        }
-
-        window.processImport = async function () {
-            const btn = document.getElementById('btnImport');
-            btn.disabled = true;
-            btn.textContent = 'Processando...';
-
-            log('Iniciando importação otimizada (Lotes de 100)...');
-
-            // 1. Carregar Lojas
-            const { data: stores, error: storeError } = await supabase.from('stores').select('id, name, pdv_code, franchise_id');
-            if (storeError) {
-                log('Erro ao carregar lojas: ' + storeError.message, 'error');
-                btn.disabled = false;
-                return;
-            }
-
-            const storeMap = {};
-            stores.forEach(s => {
-                if (s.pdv_code) storeMap[s.pdv_code.toString().trim()] = s;
-                const nameMatch = s.name.match(/^(\d+)/);
-                if (nameMatch) {
-                    const extractedPdv = nameMatch[1];
-                    if (!storeMap[extractedPdv]) storeMap[extractedPdv] = s;
-                }
-            });
-
-            log(`Lojas carregadas: ${stores.length}. PDVs mapeados: ${Object.keys(storeMap).length}`);
-
-            const BATCH_SIZE = 100;
-            let productsBatch = [];
-            let inventoryBatch = [];
-            let processedCount = 0;
-            let errorCount = 0;
-
-            for (let i = 0; i < parsedData.length; i++) {
-                const row = parsedData[i];
-
-                try {
-                    const sku = row['SKU']?.split('-')[0].trim();
-                    const description = row['DESCRICAO'];
-                    const category = row['CATEGORIA'];
-                    const pdv = row['PDV'];
-                    const stockCurrent = parseInt(row['ESTOQUE ATUAL'] || '0');
-                    const stockTransit = parseInt(row['ESTOQUE EM TRANSITO'] || '0');
-                    const totalStock = stockCurrent + stockTransit;
-
-                    if (!sku || !pdv) continue;
-
-                    const store = storeMap[pdv];
-                    if (!store) {
-                        log(`Loja PDV ${pdv} não encontrada.`, 'error');
-                        errorCount++;
-                        continue;
                     }
 
-                    // Add to batches
-                    productsBatch.push({
-                        code: sku,
-                        description: description,
-                        category: category
-                    });
-
-                    inventoryBatch.push({
-                        store_id: store.id,
-                        franchise_id: store.franchise_id,
-                        product_code: sku,
-                        quantity: totalStock,
-                        updated_at: new Date().toISOString()
-                    });
-
-                    // Process Batch if full or last item
-                    if (productsBatch.length >= BATCH_SIZE || i === parsedData.length - 1) {
-                        // Upsert Products
-                        const { error: prodError } = await supabase
-                            .from('products')
-                            .upsert(productsBatch, { onConflict: 'code', ignoreDuplicates: false });
-
-                        if (prodError) throw new Error(`Erro lote produtos: ${prodError.message}`);
-
-                        // Upsert Inventory
-                        const { error: invError } = await supabase
-                            .from('inventory_items')
-                            .upsert(inventoryBatch, { onConflict: 'store_id, product_code' });
-
-                        if (invError) throw new Error(`Erro lote estoque: ${invError.message}`);
-
-                        processedCount += productsBatch.length;
-                        log(`Processados: ${processedCount} itens...`);
-
-                        // Clear batches
-                        productsBatch = [];
-                        inventoryBatch = [];
+                    function updateStatus(msg, isError = false) {
+                        const el = document.getElementById('status');
+                        el.textContent = msg;
+                        el.className = isError ? 'text-sm font-bold text-red-600 text-center h-6' : 'text-sm font-medium text-gray-600 text-center h-6';
                     }
 
-                } catch (err) {
-                    log(err.message, 'error');
-                    errorCount++;
-                    // Clear batches on error to avoid stuck loop, though ideally we'd retry or skip
-                    productsBatch = [];
-                    inventoryBatch = [];
-                }
-            }
+                    function updateProgress(percent) {
+                        const bar = document.getElementById('progressBar');
+                        const container = document.getElementById('progressContainer');
+                        container.classList.remove('hidden');
+                        bar.style.width = `${percent}%`;
+                    }
 
-            log(`Importação concluída! Processados: ${processedCount}, Erros (Lojas não encontradas): ${errorCount}`);
-            btn.disabled = false;
-            btn.textContent = 'Importar Dados';
-            alert('Importação finalizada!');
-        };
-    </script>
-</body>
+                    window.processImport = async function () {
+                        const btn = document.getElementById('btnImport');
+                        btn.disabled = true;
+                        btn.textContent = 'Processando...';
+                        updateProgress(0);
 
-</html>
+                        updateStatus('Carregando lojas...');
+
+                        // 1. Carregar Lojas
+                        const { data: stores, error: storeError } = await supabase.from('stores').select('id, name, pdv_code, franchise_id');
+                        if (storeError) {
+                            updateStatus('Erro ao carregar lojas: ' + storeError.message, true);
+                            btn.disabled = false;
+                            return;
+                        }
+
+                        const storeMap = {};
+                        stores.forEach(s => {
+                            if (s.pdv_code) storeMap[s.pdv_code.toString().trim()] = s;
+                            const nameMatch = s.name.match(/^(\d+)/);
+                            if (nameMatch) {
+                                const extractedPdv = nameMatch[1];
+                                if (!storeMap[extractedPdv]) storeMap[extractedPdv] = s;
+                            }
+                        });
+
+                        const BATCH_SIZE = 100;
+                        let productsBatch = [];
+                        let inventoryBatch = [];
+                        let processedCount = 0;
+                        let errorCount = 0;
+                        const total = parsedData.length;
+
+                        for (let i = 0; i < total; i++) {
+                            const row = parsedData[i];
+
+                            try {
+                                const sku = row['SKU']?.split('-')[0].trim();
+                                const description = row['DESCRICAO'];
+                                const category = row['CATEGORIA'];
+                                const pdv = row['PDV'];
+                                const stockCurrent = parseInt(row['ESTOQUE ATUAL'] || '0');
+                                const stockTransit = parseInt(row['ESTOQUE EM TRANSITO'] || '0');
+                                const totalStock = stockCurrent + stockTransit;
+
+                                if (!sku || !pdv) continue;
+
+                                const store = storeMap[pdv];
+                                if (!store) {
+                                    errorCount++;
+                                    continue;
+                                }
+
+                                // Add to batches
+                                productsBatch.push({
+                                    code: sku,
+                                    description: description,
+                                    category: category
+                                });
+
+                                inventoryBatch.push({
+                                    store_id: store.id,
+                                    franchise_id: store.franchise_id,
+                                    product_code: sku,
+                                    quantity: totalStock,
+                                    updated_at: new Date().toISOString()
+                                });
+
+                                // Process Batch if full or last item
+                                if (productsBatch.length >= BATCH_SIZE || i === total - 1) {
+
+                                    // DEDUPLICATE BATCHES to avoid "ON CONFLICT" error
+                                    // Keep the last occurrence of each unique key
+                                    const uniqueProducts = Object.values(productsBatch.reduce((acc, item) => {
+                                        acc[item.code] = item;
+                                        return acc;
+                                    }, {}));
+
+                                    const uniqueInventory = Object.values(inventoryBatch.reduce((acc, item) => {
+                                        const key = `${item.store_id}-${item.product_code}`;
+                                        acc[key] = item;
+                                        return acc;
+                                    }, {}));
+
+                                    // Upsert Products
+                                    const { error: prodError } = await supabase
+                                        .from('products')
+                                        .upsert(uniqueProducts, { onConflict: 'code', ignoreDuplicates: false });
+
+                                    if (prodError) throw new Error(`Erro produtos: ${prodError.message}`);
+
+                                    // Upsert Inventory
+                                    const { error: invError } = await supabase
+                                        .from('inventory_items')
+                                        .upsert(uniqueInventory, { onConflict: 'store_id, product_code' });
+
+                                    if (invError) throw new Error(`Erro estoque: ${invError.message}`);
+
+                                    processedCount += productsBatch.length;
+
+                                    // Update Progress
+                                    const percent = Math.round((processedCount / total) * 100);
+                                    updateProgress(percent);
+                                    updateStatus(`Processando... ${percent}%`);
+
+                                    // Clear batches
+                                    productsBatch = [];
+                                    inventoryBatch = [];
+                                }
+
+                            } catch (err) {
+                                console.error(err);
+                                errorCount++;
+                                // Clear batches on error to continue
+                                productsBatch = [];
+                                inventoryBatch = [];
+                            }
+                        }
+
+                        updateProgress(100);
+                        updateStatus(`Concluído! ${processedCount} processados. ${errorCount} erros (loja não encontrada).`);
+                        btn.disabled = false;
+                        btn.textContent = 'Importar Dados';
+                        setTimeout(() => alert('Importação finalizada com sucesso!'), 500);
+                    };
+                </script>
+            </body>
+
+            </html>
