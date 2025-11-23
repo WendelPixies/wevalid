@@ -9,7 +9,8 @@ export const getStoreInventory = async (storeId: string): Promise<InventoryItem[
       *,
       products (
         description,
-        unit_cost
+        unit_cost,
+        category
       )
     `)
     .eq('store_id', storeId)
@@ -23,6 +24,9 @@ export const getStoreInventory = async (storeId: string): Promise<InventoryItem[
   return data.map((item: any) => ({
     ...item,
     product_description: item.products?.description || 'Produto não encontrado',
+    category: item.products?.category,
+    // total_cost might be in item directly if we saved it, or we can compute it
+    // For now, let's assume it's in item (from DB)
   }));
 };
 
@@ -34,7 +38,8 @@ export const getAllInventory = async (): Promise<InventoryItem[]> => {
       *,
       products (
         description,
-        unit_cost
+        unit_cost,
+        category
       ),
       stores (
         name
@@ -50,6 +55,7 @@ export const getAllInventory = async (): Promise<InventoryItem[]> => {
   return data.map((item: any) => ({
     ...item,
     product_description: item.products?.description || 'Produto não encontrado',
+    category: item.products?.category,
     store_name: item.stores?.name
   }));
 };

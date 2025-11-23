@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeValid - Dashboard de Gestão</title>
+    <link rel="icon" type="image/png" href="/perfume_icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <img src="/perfume_icon.png" alt="WeValid" class="w-12 h-12 invert">
+                    <div>
+                        <h1 class="text-2xl font-bold">WeValid Dashboard</h1>
+                        <p class="text-purple-100 text-sm" id="franchiseName">Carregando...</p>
+                    </div>
+                </div>
+                <button onclick="logout()"
+                    class="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all">
+                    <span class="material-symbols-outlined">logout</span>
+                    <span class="font-medium">Sair</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Store Filter -->
+        <div class="mb-8 fade-in">
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <label class="block text-sm font-bold text-slate-700 mb-3">
+                    <span class="material-symbols-outlined inline-block align-middle mr-2">store</span>
+                    Filtrar por Loja
+                </label>
+                <select id="storeFilter" onchange="filterByStore()"
+                    class="w-full md:w-96 px-4 py-3 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all text-lg font-medium">
+                    <option value="all">📊 Todas as Lojas (Visão Geral)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 fade-in">
+            <div class="stat-card rounded-2xl p-6 card-hover">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="material-symbols-outlined text-purple-600 text-4xl">people</span>
+                    <span class="text-3xl font-bold text-purple-600" id="totalUsers">0</span>
+                </div>
+                <p class="text-slate-600 font-medium">Funcionários</p>
+            </div>
+            <div class="stat-card rounded-2xl p-6 card-hover">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="material-symbols-outlined text-blue-600 text-4xl">inventory_2</span>
+                    <span class="text-3xl font-bold text-blue-600" id="totalProducts">0</span>
+                </div>
+                <p class="text-slate-600 font-medium">Produtos</p>
+            </div>
+            <div class="stat-card rounded-2xl p-6 card-hover">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="material-symbols-outlined text-amber-600 text-4xl">warning</span>
+                    <span class="text-3xl font-bold text-amber-600" id="expiringProducts">0</span>
+                </div>
+                <p class="text-slate-600 font-medium">Vencendo em 7 dias</p>
+            </div>
+            <div class="stat-card rounded-2xl p-6 card-hover">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="material-symbols-outlined text-green-600 text-4xl">attach_money</span>
+                    <span class="text-3xl font-bold text-green-600" id="totalCost">R$ 0</span>
+                </div>
+                <p class="text-slate-600 font-medium">Custo Total</p>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Employees Card -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 fade-in card-hover">
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="material-symbols-outlined text-purple-600 text-3xl">badge</span>
+                    <h2 class="text-2xl font-bold text-slate-800">Funcionários</h2>
+                </div>
+                <div id="employeesList" class="space-y-3 max-h-96 overflow-y-auto">
+                    <p class="text-center text-slate-400 py-8">Carregando...</p>
+                </div>
+            </div>
+
+            <!-- Products Card -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 fade-in card-hover">
+                <div class="flex items-center gap-3 mb-6">
+                    <span class="material-symbols-outlined text-blue-600 text-3xl">inventory</span>
+                    <h2 class="text-2xl font-bold text-slate-800">Produtos por Validade</h2>
+                </div>
+                <div id="productsList" class="space-y-3 max-h-96 overflow-y-auto">
+                    <p class="text-center text-slate-400 py-8">Carregando...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Ranking -->
+        <div class="mt-8 bg-white rounded-2xl shadow-lg p-6 fade-in card-hover">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="material-symbols-outlined text-indigo-600 text-3xl">leaderboard</span>
+                <h2 class="text-2xl font-bold text-slate-800">Ranking por Categoria</h2>
+            </div>
+            <div id="categoryRanking" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <p class="text-center text-slate-400 py-8 col-span-full">Carregando...</p>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        // Initialize Supabase (you'll need to replace these with your actual values)
+        const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let allEmployees = [];
+        let allProducts = [];
+        let allStores = [];
+
+        // Check authentication
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.href = '/login';
+                return null;
+            }
+            return session.user;
+        }
+
+        // Logout
+        window.logout = async function () {
+            await supabase.auth.signOut();
+            window.location.href = '/login';
+        };
+
+        // Load data
+        async function loadData() {
+            currentUser = await checkAuth();
+            if (!currentUser) return;
+
+            // Get user profile
+            const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('*, franchises(name)')
+                .eq('id', currentUser.id)
+                .single();
+
+            if (!profile || !profile.franchise_id) {
+                alert('Usuário sem franquia associada');
+                return;
+            }
+
+            document.getElementById('franchiseName').textContent = profile.franchises?.name || 'Franquia';
+
+            // Load stores
+            const { data: stores } = await supabase
+                .from('stores')
+                .select('*')
+                .eq('franchise_id', profile.franchise_id);
+
+            allStores = stores || [];
+            populateStoreFilter();
+
+            // Load employees
+            const { data: employees } = await supabase
+                .from('user_profiles')
+                .select(`
+                    *,
+                    user_stores (
+                        stores (
+                            id,
+                            name
+                        )
+                    )
+                `)
+                .eq('franchise_id', profile.franchise_id)
+                .eq('status', 'approved');
+
+            allEmployees = employees?.map(e => ({
+                ...e,
+                stores: e.user_stores?.map(us => us.stores) || []
+            })) || [];
+
+            // Load products
+            const { data: products } = await supabase
+                .from('inventory_items')
+                .select(`
+                    *,
+                    products (
+                        description,
+                        category,
+                        unit_cost
+                    ),
+                    stores (
+                        name
+                    )
+                `)
+                .eq('franchise_id', profile.franchise_id)
+                .order('expiry_date', { ascending: true });
+
+            allProducts = products?.map(p => ({
+                ...p,
+                product_description: p.products?.description,
+                category: p.products?.category,
+                store_name: p.stores?.name
+            })) || [];
+
+            updateDashboard();
+        }
+
+        function populateStoreFilter() {
+            const select = document.getElementById('storeFilter');
+            select.innerHTML = '<option value="all">📊 Todas as Lojas (Visão Geral)</option>';
+            allStores.forEach(store => {
+                const option = document.createElement('option');
+                option.value = store.id;
+                option.textContent = `🏪 ${store.name}`;
+                select.appendChild(option);
+            });
+        }
+
+        window.filterByStore = function () {
+            updateDashboard();
+        };
+
+        function updateDashboard() {
+            const selectedStore = document.getElementById('storeFilter').value;
+
+            let filteredEmployees = allEmployees;
+            let filteredProducts = allProducts;
+
+            if (selectedStore !== 'all') {
+                filteredEmployees = allEmployees.filter(e =>
+                    e.role === 'manager' || e.stores.some(s => s.id === selectedStore)
+                );
+                filteredProducts = allProducts.filter(p => p.store_id === selectedStore);
+            }
+
+            // Update stats
+            document.getElementById('totalUsers').textContent = filteredEmployees.length;
+            document.getElementById('totalProducts').textContent = filteredProducts.length;
+
+            const today = new Date();
+            const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const expiring = filteredProducts.filter(p => {
+                const expiryDate = new Date(p.expiry_date);
+                return expiryDate >= today && expiryDate <= sevenDaysFromNow;
+            });
+            document.getElementById('expiringProducts').textContent = expiring.length;
+
+            const totalCost = filteredProducts.reduce((sum, p) => sum + (p.total_cost || 0), 0);
+            document.getElementById('totalCost').textContent = `R$ ${totalCost.toFixed(2)}`;
+
+            // Render employees
+            renderEmployees(filteredEmployees);
+
+            // Render products
+            renderProducts(filteredProducts);
+
+            // Render category ranking
+            renderCategoryRanking(filteredProducts);
+        }
+
+        function renderEmployees(employees) {
+            const container = document.getElementById('employeesList');
+            if (employees.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-8">Nenhum funcionário encontrado</p>';
+                return;
+            }
+
+            container.innerHTML = employees.map(emp => {
+                const roleColors = {
+                    admin: 'bg-red-100 text-red-700',
+                    manager: 'bg-purple-100 text-purple-700',
+                    store_user: 'bg-blue-100 text-blue-700'
+                };
+                const roleNames = {
+                    admin: 'Administrador',
+                    manager: 'Gestor',
+                    store_user: 'Operador'
+                };
+                const storeNames = emp.role === 'manager'
+                    ? 'Todas as lojas'
+                    : emp.stores.map(s => s.name).join(', ') || 'Sem loja';
+
+                return `
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-800">${emp.full_name || 'Sem nome'}</p>
+                            <p class="text-sm text-slate-500">${emp.email}</p>
+                            <p class="text-xs text-slate-400 mt-1">${storeNames}</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold ${roleColors[emp.role]}">
+                            ${roleNames[emp.role]}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderProducts(products) {
+            const container = document.getElementById('productsList');
+            if (products.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-8">Nenhum produto encontrado</p>';
+                return;
+            }
+
+            container.innerHTML = products.slice(0, 20).map(product => {
+                const expiryDate = new Date(product.expiry_date);
+                const today = new Date();
+                const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+
+                let urgencyColor = 'text-green-600';
+                if (daysUntilExpiry <= 7) urgencyColor = 'text-red-600 font-bold';
+                else if (daysUntilExpiry <= 30) urgencyColor = 'text-amber-600';
+
+                return `
+                    <div class="p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1">
+                                <p class="font-bold text-slate-800">${product.product_description || 'Sem descrição'}</p>
+                                <p class="text-sm text-slate-500">Código: ${product.product_code} | ${product.store_name}</p>
+                                ${product.category ? `<span class="inline-block mt-1 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">${product.category}</span>` : ''}
+                            </div>
+                            <span class="text-lg font-bold text-slate-700">×${product.quantity}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="${urgencyColor}">
+                                ${expiryDate.toLocaleDateString('pt-BR')} 
+                                ${daysUntilExpiry > 0 ? `(${daysUntilExpiry}d)` : '(Vencido)'}
+                            </span>
+                            <span class="font-bold text-green-600">R$ ${(product.total_cost || 0).toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderCategoryRanking(products) {
+            const container = document.getElementById('categoryRanking');
+
+            // Group by category
+            const categoryStats = {};
+            products.forEach(p => {
+                const cat = p.category || 'Sem Categoria';
+                if (!categoryStats[cat]) {
+                    categoryStats[cat] = { quantity: 0, cost: 0, products: 0 };
+                }
+                categoryStats[cat].quantity += p.quantity;
+                categoryStats[cat].cost += p.total_cost || 0;
+                categoryStats[cat].products += 1;
+            });
+
+            const sorted = Object.entries(categoryStats)
+                .sort((a, b) => b[1].cost - a[1].cost);
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-8 col-span-full">Nenhuma categoria encontrada</p>';
+                return;
+            }
+
+            const colors = [
+                'from-purple-500 to-purple-600',
+                'from-blue-500 to-blue-600',
+                'from-green-500 to-green-600',
+                'from-amber-500 to-amber-600',
+                'from-red-500 to-red-600',
+                'from-indigo-500 to-indigo-600'
+            ];
+
+            container.innerHTML = sorted.map(([category, stats], index) => `
+                <div class="bg-gradient-to-br ${colors[index % colors.length]} text-white rounded-xl p-6 card-hover">
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="text-4xl font-black opacity-50">#${index + 1}</span>
+                        <h3 class="text-lg font-bold flex-1">${category}</h3>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="opacity-90">Produtos:</span>
+                            <span class="font-bold">${stats.products}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="opacity-90">Quantidade:</span>
+                            <span class="font-bold">${stats.quantity}</span>
+                        </div>
+                        <div class="flex justify-between border-t border-white/20 pt-2">
+                            <span class="opacity-90">Custo Total:</span>
+                            <span class="font-bold text-lg">R$ ${stats.cost.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Initialize
+        loadData();
+    </script>
+</body>
+
+</html>

@@ -3,6 +3,7 @@ export interface ProductCatalogItem {
   code: string;
   description: string;
   unit_cost?: number;
+  category?: string;
 }
 
 export interface InventoryItem {
@@ -11,6 +12,7 @@ export interface InventoryItem {
   franchise_id?: string; // Added
   product_code: string;
   product_description?: string; // Joined from products table
+  category?: string; // Joined from products table
   quantity: number;
   expiry_date: string; // YYYY-MM-DD
   total_cost?: number; // Added
