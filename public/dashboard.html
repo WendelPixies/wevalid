@@ -27,7 +27,7 @@
 
         .card-hover:hover {
             transform: translateY(-4px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
         .gradient-bg {
@@ -58,7 +58,6 @@
 </head>
 
 <body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
-    <!-- Header -->
     <header class="gradient-bg text-white shadow-lg sticky top-0 z-50">
         <div class="container mx-auto px-4 py-6">
             <div class="flex items-center justify-between">
@@ -78,9 +77,7 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
-        <!-- Store Filter -->
         <div class="mb-8 fade-in">
             <div class="bg-white rounded-2xl shadow-lg p-6">
                 <label class="block text-sm font-bold text-slate-700 mb-3">
@@ -94,7 +91,6 @@
             </div>
         </div>
 
-        <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 fade-in">
             <div class="stat-card rounded-2xl p-6 card-hover">
                 <div class="flex items-center justify-between mb-2">
@@ -126,9 +122,7 @@
             </div>
         </div>
 
-        <!-- Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Employees Card -->
             <div class="bg-white rounded-2xl shadow-lg p-6 fade-in card-hover">
                 <div class="flex items-center gap-3 mb-6">
                     <span class="material-symbols-outlined text-purple-600 text-3xl">badge</span>
@@ -139,7 +133,6 @@
                 </div>
             </div>
 
-            <!-- Products Card -->
             <div class="bg-white rounded-2xl shadow-lg p-6 fade-in card-hover">
                 <div class="flex items-center gap-3 mb-6">
                     <span class="material-symbols-outlined text-blue-600 text-3xl">inventory</span>
@@ -151,7 +144,6 @@
             </div>
         </div>
 
-        <!-- Category Ranking -->
         <div class="mt-8 bg-white rounded-2xl shadow-lg p-6 fade-in card-hover">
             <div class="flex items-center gap-3 mb-6">
                 <span class="material-symbols-outlined text-indigo-600 text-3xl">leaderboard</span>
@@ -161,14 +153,24 @@
                 <p class="text-center text-slate-400 py-8 col-span-full">Carregando...</p>
             </div>
         </div>
+
+        <div class="mt-8 bg-white rounded-2xl shadow-lg p-6 fade-in card-hover">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="material-symbols-outlined text-orange-600 text-3xl">swap_horiz</span>
+                <h2 class="text-2xl font-bold text-slate-800">Sugestões de Transferência</h2>
+                <span class="ml-auto text-sm text-slate-500">Produtos vencendo em 7 dias</span>
+            </div>
+            <div id="transferSuggestions" class="space-y-4">
+                <p class="text-center text-slate-400 py-8">Carregando...</p>
+            </div>
+        </div>
     </main>
 
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-        // Initialize Supabase (you'll need to replace these with your actual values)
-        const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL';
-        const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
+        const SUPABASE_URL = 'https://acensrxfxzqozakkklmy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZW5zcnhmeHpxb3pha2trbG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2ODc2NDUsImV4cCI6MjA3OTI2MzY0NX0.rRsWLCmIcoyKkE5Qh_et53wO_xzLriOjrsfU0Rs85Lo';
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentUser = null;
@@ -176,28 +178,27 @@
         let allProducts = [];
         let allStores = [];
 
-        // Check authentication
         async function checkAuth() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
-                window.location.href = '/login';
+                console.warn('No active session');
                 return null;
             }
             return session.user;
         }
 
-        // Logout
-        window.logout = async function () {
+        window.logout = async function()  {
             await supabase.auth.signOut();
-            window.location.href = '/login';
+            window.location.href = '/';
         };
 
-        // Load data
         async function loadData() {
             currentUser = await checkAuth();
-            if (!currentUser) return;
+            if (!currentUser) {
+                document.getElementById('franchiseName').textContent = 'Não autenticado';
+                return;
+            }
 
-            // Get user profile
             const { data: profile } = await supabase
                 .from('user_profiles')
                 .select('*, franchises(name)')
@@ -211,7 +212,6 @@
 
             document.getElementById('franchiseName').textContent = profile.franchises?.name || 'Franquia';
 
-            // Load stores
             const { data: stores } = await supabase
                 .from('stores')
                 .select('*')
@@ -220,18 +220,9 @@
             allStores = stores || [];
             populateStoreFilter();
 
-            // Load employees
             const { data: employees } = await supabase
                 .from('user_profiles')
-                .select(`
-                    *,
-                    user_stores (
-                        stores (
-                            id,
-                            name
-                        )
-                    )
-                `)
+                .select(`*, user_stores (stores (id, name))`)
                 .eq('franchise_id', profile.franchise_id)
                 .eq('status', 'approved');
 
@@ -240,20 +231,9 @@
                 stores: e.user_stores?.map(us => us.stores) || []
             })) || [];
 
-            // Load products
             const { data: products } = await supabase
                 .from('inventory_items')
-                .select(`
-                    *,
-                    products (
-                        description,
-                        category,
-                        unit_cost
-                    ),
-                    stores (
-                        name
-                    )
-                `)
+                .select(`*, products (description, category, unit_cost), stores (name)`)
                 .eq('franchise_id', profile.franchise_id)
                 .order('expiry_date', { ascending: true });
 
@@ -278,29 +258,27 @@
             });
         }
 
-        window.filterByStore = function () {
+        window.filterByStore = function() {
             updateDashboard();
         };
 
         function updateDashboard() {
             const selectedStore = document.getElementById('storeFilter').value;
-
             let filteredEmployees = allEmployees;
             let filteredProducts = allProducts;
 
             if (selectedStore !== 'all') {
                 filteredEmployees = allEmployees.filter(e =>
-                    e.role === 'manager' || e.stores.some(s => s.id === selectedStore)
+                    e.role === 'manager' || e.stores.some(s = > s.id === selectedStore)
                 );
                 filteredProducts = allProducts.filter(p => p.store_id === selectedStore);
             }
 
-            // Update stats
-            document.getElementById('totalUsers').textContent = filteredEmployees.length;
+            docmentById('totalUsers').textContent = filteredEmployees.length;
             document.getElementById('totalProducts').textContent = filteredProducts.length;
 
             const today = new Date();
-            const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+           const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
             const expiring = filteredProducts.filter(p => {
                 const expiryDate = new Date(p.expiry_date);
                 return expiryDate >= today && expiryDate <= sevenDaysFromNow;
@@ -310,14 +288,10 @@
             const totalCost = filteredProducts.reduce((sum, p) => sum + (p.total_cost || 0), 0);
             document.getElementById('totalCost').textContent = `R$ ${totalCost.toFixed(2)}`;
 
-            // Render employees
             renderEmployees(filteredEmployees);
-
-            // Render products
             renderProducts(filteredProducts);
-
-            // Render category ranking
             renderCategoryRanking(filteredProducts);
+            renderTransferSuggestions(allProducts);
         }
 
         function renderEmployees(employees) {
@@ -328,19 +302,9 @@
             }
 
             container.innerHTML = employees.map(emp => {
-                const roleColors = {
-                    admin: 'bg-red-100 text-red-700',
-                    manager: 'bg-purple-100 text-purple-700',
-                    store_user: 'bg-blue-100 text-blue-700'
-                };
-                const roleNames = {
-                    admin: 'Administrador',
-                    manager: 'Gestor',
-                    store_user: 'Operador'
-                };
-                const storeNames = emp.role === 'manager'
-                    ? 'Todas as lojas'
-                    : emp.stores.map(s => s.name).join(', ') || 'Sem loja';
+                const roleColors = { admin: 'bg-red-100 text-red-700', manager: 'bg-purple-100 text-purple-700', store_user: 'bg-blue-100 text-blue-700' };
+                const roleNames = { admin: 'Administrador', manager: 'Gestor', store_user: 'Operador' };
+                const storeNames = emp.role === 'manager' ? 'Todas as lojas' : emp.stores.map(s => s.name).join(', ') || 'Sem loja';
 
                 return `
                     <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
@@ -349,10 +313,8 @@
                             <p class="text-sm text-slate-500">${emp.email}</p>
                             <p class="text-xs text-slate-400 mt-1">${storeNames}</p>
                         </div>
-                        <span class="px-3 py-1 rounded-full text-xs font-bold ${roleColors[emp.role]}">
-                            ${roleNames[emp.role]}
-                        </span>
-                    </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold ${roleColors[emp.role]}"${roleNames[emp.role]}</span>
+                   </div>
                 `;
             }).join('');
         }
@@ -368,7 +330,6 @@
                 const expiryDate = new Date(product.expiry_date);
                 const today = new Date();
                 const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
-
                 let urgencyColor = 'text-green-600';
                 if (daysUntilExpiry <= 7) urgencyColor = 'text-red-600 font-bold';
                 else if (daysUntilExpiry <= 30) urgencyColor = 'text-amber-600';
@@ -379,15 +340,12 @@
                             <div class="flex-1">
                                 <p class="font-bold text-slate-800">${product.product_description || 'Sem descrição'}</p>
                                 <p class="text-sm text-slate-500">Código: ${product.product_code} | ${product.store_name}</p>
-                                ${product.category ? `<span class="inline-block mt-1 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">${product.category}</span>` : ''}
+                                ${product.category ? `<sp-block mt-1 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">${product.category}</span>` : ''}
                             </div>
                             <span class="text-lg font-bold text-slate-700">×${product.quantity}</span>
                         </div>
                         <div class="flex justify-between items-center text-sm">
-                            <span class="${urgencyColor}">
-                                ${expiryDate.toLocaleDateString('pt-BR')} 
-                                ${daysUntilExpiry > 0 ? `(${daysUntilExpiry}d)` : '(Vencido)'}
-                            </span>
+                            <span class="${urgencyColor}">${expiryDate.toLocaleDateString('pt-BR')} ${daysUntilExpiry > 0 ? `(${daysUntilExpiry}d)` : '(Vencido)'}</span>
                             <span class="font-bold text-green-600">R$ ${(product.total_cost || 0).toFixed(2)}</span>
                         </div>
                     </div>
@@ -397,36 +355,22 @@
 
         function renderCategoryRanking(products) {
             const container = document.getElementById('categoryRanking');
-
-            // Group by category
             const categoryStats = {};
             products.forEach(p => {
                 const cat = p.category || 'Sem Categoria';
-                if (!categoryStats[cat]) {
-                    categoryStats[cat] = { quantity: 0, cost: 0, products: 0 };
-                }
+                if (!categoryStats[cat]) categoryStats[cat] = { quantity: 0, cost: 0, products: 0 };
                 categoryStats[cat].quantity += p.quantity;
                 categoryStats[cat].cost += p.total_cost || 0;
                 categoryStats[cat].products += 1;
             });
 
-            const sorted = Object.entries(categoryStats)
-                .sort((a, b) => b[1].cost - a[1].cost);
-
+            const sorted = Object.entries(categoryStats).sort((a, b) => b[1].cost - a[1].cost);
             if (sorted.length === 0) {
                 container.innerHTML = '<p class="text-center text-slate-400 py-8 col-span-full">Nenhuma categoria encontrada</p>';
                 return;
             }
 
-            const colors = [
-                'from-purple-500 to-purple-600',
-                'from-blue-500 to-blue-600',
-                'from-green-500 to-green-600',
-                'from-amber-500 to-amber-600',
-                'from-red-500 to-red-600',
-                'from-indigo-500 to-indigo-600'
-            ];
-
+            const colors = ['from-purple-500 to-purple-600', 'from-blue-500 to-blue-600', 'from-green-500 to-green-600', 'from-amber-500 to-amber-600', 'fro-red-600', 'from-indigo-500 to-indigo-600'];
             container.innerHTML = sorted.map(([category, stats], index) => `
                 <div class="bg-gradient-to-br ${colors[index % colors.length]} text-white rounded-xl p-6 card-hover">
                     <div class="flex items-center gap-2 mb-4">
@@ -434,24 +378,77 @@
                         <h3 class="text-lg font-bold flex-1">${category}</h3>
                     </div>
                     <div class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <span class="opacity-90">Produtos:</span>
-                            <span class="font-bold">${stats.products}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="opacity-90">Quantidade:</span>
-                            <span class="font-bold">${stats.quantity}</span>
-                        </div>
-                        <div class="flex justify-between border-t border-white/20 pt-2">
-                            <span class="opacity-90">Custo Total:</span>
-                            <span class="font-bold text-lg">R$ ${stats.cost.toFixed(2)}</span>
-                        </div>
+                        <div class="flex justify-between"><span class="opacity-90">Produtos:</span><span class="font-bold">${stats.products}</span></div>
+                        <div class="flex justify-between"><span class="opacity-90">Quantidade:</span><span class="font-bold">${stats.quantity}</span></div>
+                        <div class="flex justify-between border-t border-white/20 pt-2"><span class="opacity-90">Custo Total:</span><span class="font-bold text-lg">R$ ${stats.cost.toFixed(2)}</span></div>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Initialize
+        function renderTransferSuggestions(products) {
+            const container = document.getElementById('transferSuggestions');
+            const today = new Date();
+            const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+            const expiringProducts = products.filter(p => {
+                const expiryDate = new Date(p.expiry_date);
+                return expiryDate >= today && expiryDate <= sevenDaysFromNow;
+            });
+
+            const suggestions = [];
+            expiringProducts.forEach(expiring => {
+                const sameProductOtherStores = products.filter(p =>
+                    p.product_code === expiring.product_code &&
+                    p.store_id !== expiring.store_id
+                );
+
+                const storesWithoutProduct = allStores.filter(store =>
+                    !sameProductOtherStores.some(p => p.store_id === store.id) &&
+                    store.id !== expiring.store_id
+                );
+
+                if (storesWithoutProduct.length > 0) {
+                    suggestions.push({
+                        product: expiring,
+                        targetStores: storesWithoutProduct
+                    });
+                }
+            });
+
+            if (suggestions.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-8">Nenhuma sugestã trncia no momento</p>';
+                return;
+            }
+
+            container.innerHTML = suggestions.map(suggestion => {
+                const expiryDate = new Date(suggestion.product.expiry_date);
+                const daysUntilExpiry = Math.ceil((expiryDate - expiryDate) / (1000 * 60 * 60 * 24));
+
+                return `
+                    <div class="p-4 bg-orange-50 border-2 border-orange-200 rounded-xl hover:bg-orange-100 transition-colors">
+                        <div class="flex items-start gap-4">
+                            <span class="material-symbols-outlined text-orange-600 text-3xl">local_shipping</span>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-slate-800 mb-1">${suggestion.product.product_description || 'Sem descrição'}</h4>
+                                <p class="text-sm text-slate-600 mb-2">
+                                    <span class="font-semibold">Origem:</span> ${suggestion.product.store_name} | 
+                                    <span class="font-semibold">Quantidade:</span> ${suggestion.product.quantity} unidades | 
+                                    <span class="font-semibold text-red-600">Vence em ${daysUntilExpiry} dias</span>
+                                </p>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="text-xs font-semibold text-slate-600">Transferir para:</span>
+                                    ${suggestion.targetStores.map(store => `
+                                        <span class="px-3 py-1 bg-white border border-orange-300 rounded-full text-xs font-medium text-orange-700">${store.name}</span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         loadData();
     </script>
 </body>
