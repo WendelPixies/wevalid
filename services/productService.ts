@@ -237,25 +237,27 @@ export const getFranchiseUsers = async (franchiseId: string) => {
     .from('user_profiles')
     .select(`
       *,
-      stores (
-        name
+      user_stores (
+        stores (
+          id,
+          name
+        )
       )
     `)
     .eq('franchise_id', franchiseId)
-    .neq('status', 'pending'); // Get approved/rejected (mostly approved)
+    .neq('status', 'pending');
 
   if (error) throw error;
+
   return data.map((u: any) => ({
     ...u,
-    store_name: u.stores?.name
+    // Map the nested structure to a flat array of stores
+    stores: u.user_stores?.map((us: any) => us.stores) || []
   }));
 };
 
-export const updateUserStatus = async (userId: string, status: 'approved' | 'rejected', role: 'store_user' | 'manager' = 'store_user', storeId?: string | null) => {
+export const updateUserStatus = async (userId: string, status: 'approved' | 'rejected', role: 'store_user' | 'manager' = 'store_user') => {
   const updateData: any = { status, role };
-  // If storeId is provided (string) or explicitly null, update it.
-  // If undefined, do not touch it.
-  if (storeId !== undefined) updateData.store_id = storeId;
 
   const { data, error } = await supabase
     .from('user_profiles')
@@ -266,6 +268,23 @@ export const updateUserStatus = async (userId: string, status: 'approved' | 'rej
 
   if (error) throw error;
   return data;
+};
+
+export const linkUserToStore = async (userId: string, storeId: string) => {
+  const { error } = await supabase
+    .from('user_stores')
+    .insert([{ user_id: userId, store_id: storeId }]);
+
+  if (error) throw error;
+};
+
+export const unlinkUserFromStore = async (userId: string, storeId: string) => {
+  const { error } = await supabase
+    .from('user_stores')
+    .delete()
+    .match({ user_id: userId, store_id: storeId });
+
+  if (error) throw error;
 };
 
 export const updateUserProfile = async (userId: string, updates: { full_name?: string }) => {

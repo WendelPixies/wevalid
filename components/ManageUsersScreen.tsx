@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getFranchiseUsers, updateUserStatus, getFranchiseStores, updateUserProfile } from '../services/productService';
+import { getFranchiseUsers, updateUserStatus, getFranchiseStores, updateUserProfile, linkUserToStore, unlinkUserFromStore } from '../services/productService';
 import { UserProfile, Store } from '../types';
 
 export const ManageUsersScreen = () => {
@@ -53,13 +53,7 @@ export const ManageUsersScreen = () => {
     const handlePromoteToManager = async (userId: string) => {
         if (!window.confirm("Tem certeza que deseja promover este usuário a Gestor? Ele terá acesso total à franquia.")) return;
         try {
-            // Pass null (or empty string if DB requires, but usually null) for store_id to clear it
-            // updateUserStatus signature: (userId, status, role, storeId)
-            // We need to cast null to string if strict, or update service to accept null.
-            // Let's update service to accept null or handle it.
-            // Actually, in updateUserStatus: if (storeId !== undefined) updateData.store_id = storeId;
-            // So if we pass null, it should update to null.
-            await updateUserStatus(userId, 'approved', 'manager', null as any);
+            await updateUserStatus(userId, 'approved', 'manager');
             alert("Usuário promovido a Gestor!");
             loadData();
         } catch (e) {
@@ -78,13 +72,19 @@ export const ManageUsersScreen = () => {
         }
     };
 
-    const handleAssignStore = async (userId: string, storeId: string) => {
+    const handleToggleStore = async (userId: string, storeId: string, isLinked: boolean) => {
         try {
-            await updateUserStatus(userId, 'approved', 'store_user', storeId);
-            alert("Loja vinculada com sucesso!");
+            if (isLinked) {
+                await linkUserToStore(userId, storeId);
+            } else {
+                await unlinkUserFromStore(userId, storeId);
+            }
+            // Update local state to reflect change immediately (optimistic update) or reload
+            // Reloading is safer to ensure sync
             loadData();
         } catch (e) {
-            alert("Erro ao vincular loja.");
+            alert("Erro ao atualizar vínculo de loja.");
+            console.error(e);
         }
     };
 
@@ -115,82 +115,98 @@ export const ManageUsersScreen = () => {
             <main className="p-4 space-y-4">
                 {loading ? <p className="text-center mt-10">Carregando equipe...</p> :
                     users.length === 0 ? <p className="text-center mt-10 text-gray-500">Nenhum usuário ativo encontrado.</p> :
-                        users.map(user => (
-                            <div key={user.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                                <div className="flex justify-between items-start mb-3">
-                                    <div>
-                                        <h3 className="font-bold text-slate-900 dark:text-white text-lg">{user.full_name || 'Sem nome'}</h3>
-                                        <p className="text-slate-500 dark:text-slate-400 text-sm">{user.email}</p>
+                        users
+                            .filter(user => {
+                                // Hide admins if current user is not admin
+                                if (profile?.role !== 'admin' && user.role === 'admin') return false;
+                                return true;
+                            })
+                            .map(user => (
+                                <div key={user.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <h3 className="font-bold text-slate-900 dark:text-white text-lg">{user.full_name || 'Sem nome'}</h3>
+                                            <p className="text-slate-500 dark:text-slate-400 text-sm">{user.email}</p>
+                                        </div>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${user.role === 'admin' ? 'bg-red-100 text-red-700' :
+                                            user.role === 'manager' ? 'bg-purple-100 text-purple-700' :
+                                                'bg-blue-100 text-blue-700'
+                                            }`}>
+                                            {user.role === 'admin' ? 'Administrador' :
+                                                user.role === 'manager' ? 'Gestor' : 'Operador'}
+                                        </span>
+                                        <button onClick={() => handleEditUser(user)} className="ml-2 text-slate-400 hover:text-primary">
+                                            <span className="material-symbols-outlined text-lg">edit</span>
+                                        </button>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${user.role === 'admin' ? 'bg-red-100 text-red-700' :
-                                        user.role === 'manager' ? 'bg-purple-100 text-purple-700' :
-                                            'bg-blue-100 text-blue-700'
-                                        }`}>
-                                        {user.role === 'admin' ? 'Administrador' :
-                                            user.role === 'manager' ? 'Gestor' : 'Operador'}
-                                    </span>
-                                    <button onClick={() => handleEditUser(user)} className="ml-2 text-slate-400 hover:text-primary">
-                                        <span className="material-symbols-outlined text-lg">edit</span>
-                                    </button>
-                                </div>
 
-                                {/* Store Assignment Section */}
-                                {user.role === 'store_user' ? (
-                                    <div className="mb-4">
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Loja Vinculada</label>
-                                        <select
-                                            className="w-full p-2 rounded border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
-                                            value={user.store_id || ''}
-                                            onChange={(e) => handleAssignStore(user.id, e.target.value)}
-                                        >
-                                            <option value="">Selecione uma loja...</option>
-                                            {stores.map(store => (
-                                                <option key={store.id} value={store.id}>{store.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                ) : (
-                                    <div className="mb-4">
-                                        <p className="text-sm font-bold text-purple-700 bg-purple-50 p-2 rounded border border-purple-100 text-center">
-                                            Gestor da Franquia (Acesso Total)
-                                        </p>
-                                    </div>
-                                )}
-
-                                <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
-                                    {user.role !== 'admin' && (
-                                        <>
-                                            {user.role !== 'manager' ? (
-                                                profile?.role === 'admin' && (
-                                                    <button
-                                                        onClick={() => handlePromoteToManager(user.id)}
-                                                        className="flex-1 bg-purple-50 text-purple-700 px-3 py-2 rounded-lg text-sm font-bold hover:bg-purple-100 transition-colors"
-                                                    >
-                                                        Promover a Gestor
-                                                    </button>
-                                                )
-                                            ) : (
-                                                profile?.role === 'admin' && (
-                                                    <button
-                                                        onClick={() => handleDemoteToStoreUser(user.id)}
-                                                        className="flex-1 bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-100 transition-colors"
-                                                    >
-                                                        Tornar Operador
-                                                    </button>
-                                                )
+                                    {/* Store Assignment Section (Multi-select) */}
+                                    {user.role === 'store_user' ? (
+                                        <div className="mb-4">
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Lojas Vinculadas</label>
+                                            <div className="flex flex-col gap-2 max-h-40 overflow-y-auto p-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900">
+                                                {stores.map(store => {
+                                                    const isLinked = user.stores?.some(s => s.id === store.id);
+                                                    return (
+                                                        <label key={store.id} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 p-1 rounded">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="rounded border-slate-300 text-primary focus:ring-primary"
+                                                                checked={isLinked || false}
+                                                                onChange={(e) => handleToggleStore(user.id, store.id, e.target.checked)}
+                                                            />
+                                                            {store.name}
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                            {(!user.stores || user.stores.length === 0) && (
+                                                <p className="text-xs text-red-500 mt-1">Nenhuma loja vinculada.</p>
                                             )}
-
-                                            <button
-                                                onClick={() => handleRemoveUser(user.id)}
-                                                className="px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors"
-                                            >
-                                                Remover Acesso
-                                            </button>
-                                        </>
+                                        </div>
+                                    ) : (
+                                        <div className="mb-4">
+                                            <p className="text-sm font-bold text-purple-700 bg-purple-50 p-2 rounded border border-purple-100 text-center">
+                                                Gestor da Franquia (Acesso Total)
+                                            </p>
+                                        </div>
                                     )}
+
+                                    <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
+                                        {user.role !== 'admin' && (
+                                            <>
+                                                {user.role !== 'manager' ? (
+                                                    profile?.role === 'admin' && (
+                                                        <button
+                                                            onClick={() => handlePromoteToManager(user.id)}
+                                                            className="flex-1 bg-purple-50 text-purple-700 px-3 py-2 rounded-lg text-sm font-bold hover:bg-purple-100 transition-colors"
+                                                        >
+                                                            Promover a Gestor
+                                                        </button>
+                                                    )
+                                                ) : (
+                                                    profile?.role === 'admin' && (
+                                                        <button
+                                                            onClick={() => handleDemoteToStoreUser(user.id)}
+                                                            className="flex-1 bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-100 transition-colors"
+                                                        >
+                                                            Tornar Operador
+                                                        </button>
+                                                    )
+                                                )}
+
+                                                <button
+                                                    onClick={() => handleRemoveUser(user.id)}
+                                                    className="px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors"
+                                                >
+                                                    Remover Acesso
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+
             </main>
 
             {/* Edit User Modal */}

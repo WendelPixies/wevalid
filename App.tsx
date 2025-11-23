@@ -629,8 +629,9 @@ const StoreDashboard = () => {
 
   // Determine context: Admin viewing a store, or Store User viewing their own
   const isAdminView = location.state?.isAdminView || false;
-  const storeId = isAdminView ? location.state?.storeId : profile?.store_id;
-  // Initial store name from location or default
+
+  // Local state for the currently active store
+  const [currentStoreId, setCurrentStoreId] = useState<string | null>(null);
   const [storeName, setStoreName] = useState(location.state?.storeName || 'Minha Loja');
 
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -641,42 +642,81 @@ const StoreDashboard = () => {
   const [availableStores, setAvailableStores] = useState<Store[]>([]);
   const [selectedStore, setSelectedStore] = useState('');
 
+  // Initialize currentStoreId
   useEffect(() => {
-    if (storeId) {
+    if (isAdminView) {
+      setCurrentStoreId(location.state?.storeId);
+    } else if (profile?.store_id) {
+      setCurrentStoreId(profile.store_id);
+    } else if (profile?.stores && profile.stores.length > 0) {
+      // If no default store_id but has linked stores, pick the first one
+      setCurrentStoreId(profile.stores[0].id);
+    }
+  }, [profile, isAdminView, location.state]);
+
+  useEffect(() => {
+    if (currentStoreId) {
       loadItems();
-      // Fetch store name if not already provided via navigation state
-      if (!location.state?.storeName) {
-        supabase.from('stores').select('name').eq('id', storeId).single()
+      // Fetch store name
+      if (isAdminView && location.state?.storeName) {
+        // Already have name
+      } else if (!isAdminView && profile?.stores) {
+        const s = profile.stores.find(s => s.id === currentStoreId);
+        if (s) setStoreName(s.name);
+      } else {
+        supabase.from('stores').select('name').eq('id', currentStoreId).single()
           .then(({ data }) => {
             if (data) setStoreName(data.name);
           });
       }
     } else {
-      setLoading(false); // Nothing to load if no storeId
+      setLoading(false);
       if (!isAdminView) {
-        getStores().then(setAvailableStores);
+        // If user has no linked stores, show all available (or maybe none)
+        // For now, keep existing behavior but prefer linked stores if any
+        if (profile?.stores && profile.stores.length > 0) {
+          setAvailableStores(profile.stores);
+        } else {
+          getStores().then(setAvailableStores);
+        }
       }
     }
-  }, [storeId]);
+  }, [currentStoreId, profile]);
 
   const handleJoinStore = async () => {
     if (!selectedStore || !profile?.id) return;
     try {
+      // Update profile's store_id AND add to user_stores
       const { error } = await supabase.from('user_profiles').update({ store_id: selectedStore }).eq('id', profile.id);
       if (error) throw error;
+
+      // Also link in user_stores if not exists
+      const { error: linkError } = await supabase.from('user_stores').insert({ user_id: profile.id, store_id: selectedStore });
+      if (linkError && linkError.code !== '23505') { // Ignore unique violation
+        console.error("Error linking store:", linkError);
+      }
+
       alert("Loja vinculada com sucesso!");
-      window.location.reload(); // Force reload to update context
+      window.location.reload();
     } catch (e: any) {
       console.error(e);
       alert(`Erro ao vincular loja: ${e.message || JSON.stringify(e)}`);
     }
   };
 
+  const handleSwitchStore = async (newId: string) => {
+    setCurrentStoreId(newId);
+    if (profile?.id) {
+      // Persist selection
+      await supabase.from('user_profiles').update({ store_id: newId }).eq('id', profile.id);
+    }
+  };
+
   const loadItems = async () => {
     setLoading(true);
     try {
-      if (storeId) {
-        const data = await getStoreInventory(storeId);
+      if (currentStoreId) {
+        const data = await getStoreInventory(currentStoreId);
         setItems(data);
       }
     } catch (e) {
@@ -697,7 +737,7 @@ const StoreDashboard = () => {
   const handleEdit = (id: string) => {
     const item = items.find(i => i.id === id);
     if (item) {
-      navigate('/add', { state: { editItem: item, storeId } });
+      navigate('/add', { state: { editItem: item, storeId: currentStoreId } });
     }
   };
 
@@ -723,7 +763,7 @@ const StoreDashboard = () => {
     return true;
   });
 
-  if (!storeId && !loading) {
+  if (!currentStoreId && !loading) {
     return (
       <div className="flex h-screen flex-col items-center justify-center p-4 text-center bg-background-light dark:bg-background-dark">
         <div className="w-full max-w-md bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg">
@@ -764,26 +804,44 @@ const StoreDashboard = () => {
           ) : (
             <span className="material-symbols-outlined">store</span>
           )}
-          <h1 className="text-lg font-bold">{storeName}</h1>
+
+          {/* Store Switcher or Title */}
+          {(!isAdminView && profile?.stores && profile.stores.length > 1) ? (
+            <div className="flex items-center gap-2">
+              <select
+                value={currentStoreId || ''}
+                onChange={(e) => handleSwitchStore(e.target.value)}
+                className="bg-transparent font-bold text-lg border-none focus:ring-0 cursor-pointer text-slate-900 dark:text-white"
+              >
+                {profile.stores.map(s => (
+                  <option key={s.id} value={s.id} className="text-black">{s.name}</option>
+                ))}
+              </select>
+              <span className="material-symbols-outlined text-sm text-slate-500">expand_more</span>
+            </div>
+          ) : (
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white">{storeName}</h1>
+          )}
+
           <div className="flex gap-2">
-            <span className="material-symbols-outlined">notifications</span>
+            <span className="material-symbols-outlined text-slate-800 dark:text-slate-200">notifications</span>
             {!isAdminView && (
-              <button onClick={signOut}><span className="material-symbols-outlined">logout</span></button>
+              <button onClick={signOut} className="text-slate-800 dark:text-slate-200"><span className="material-symbols-outlined">logout</span></button>
             )}
           </div>
         </div>
         <div className="px-4 pb-3">
           <input
-            className="w-full bg-gray-100 dark:bg-gray-800 rounded-lg p-2 pl-4"
+            className="w-full bg-gray-100 dark:bg-gray-800 rounded-lg p-2 pl-4 text-slate-900 dark:text-white"
             placeholder="Buscar produtos..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
         <div className="flex gap-3 px-4 pb-4 overflow-x-auto no-scrollbar">
-          <button onClick={() => setFilter(FilterType.TODAY)} className={`px-4 py-1 rounded-full text-sm ${filter === FilterType.TODAY ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>Hoje</button>
-          <button onClick={() => setFilter(FilterType.WEEK)} className={`px-4 py-1 rounded-full text-sm ${filter === FilterType.WEEK ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>7 Dias</button>
-          <button onClick={() => setFilter(FilterType.ALL)} className={`px-4 py-1 rounded-full text-sm ${filter === FilterType.ALL ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>Todos</button>
+          <button onClick={() => setFilter(FilterType.TODAY)} className={`px-4 py-1 rounded-full text-sm ${filter === FilterType.TODAY ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700 text-slate-700 dark:text-slate-300'}`}>Hoje</button>
+          <button onClick={() => setFilter(FilterType.WEEK)} className={`px-4 py-1 rounded-full text-sm ${filter === FilterType.WEEK ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700 text-slate-700 dark:text-slate-300'}`}>7 Dias</button>
+          <button onClick={() => setFilter(FilterType.ALL)} className={`px-4 py-1 rounded-full text-sm ${filter === FilterType.ALL ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700 text-slate-700 dark:text-slate-300'}`}>Todos</button>
         </div>
       </header>
       <main className="flex-1 p-4 pb-24 space-y-3">
@@ -800,7 +858,7 @@ const StoreDashboard = () => {
         }
       </main>
       <button
-        onClick={() => navigate('/add', { state: { storeId } })}
+        onClick={() => navigate('/add', { state: { storeId: currentStoreId } })}
         className="fixed bottom-6 right-6 h-14 w-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
       >
         <span className="material-symbols-outlined text-3xl">add</span>

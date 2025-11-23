@@ -56,7 +56,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             let { data, error } = await supabase
                 .from('user_profiles')
-                .select('*')
+                .select(`
+                    *,
+                    user_stores (
+                        stores (
+                            id,
+                            name
+                        )
+                    )
+                `)
                 .eq('id', userId)
                 .single();
 
@@ -84,6 +92,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // If data is still null (e.g. other error), provide a safe fallback so the app doesn't hang
             if (!data) {
                 data = { id: userId, email: user?.email || '', role: 'store_user' };
+            } else {
+                // Transform nested stores
+                const stores = data.user_stores?.map((us: any) => us.stores) || [];
+                data = { ...data, stores };
             }
 
             setProfile(data);

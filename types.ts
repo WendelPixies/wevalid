@@ -34,6 +34,7 @@ export interface UserProfile {
   status?: 'pending' | 'approved' | 'rejected';
   store_id?: string;
   franchise_id?: string;
+  stores?: Store[];
 }
 
 export enum FilterType {
