@@ -7,6 +7,8 @@ import { ProductCard } from './components/ProductCard';
 import { DeleteModal } from './components/DeleteModal';
 import { FranchiseDashboard } from './components/FranchiseDashboard';
 import { ManageUsersScreen } from './components/ManageUsersScreen';
+import { ResetPasswordScreen } from './components/ResetPasswordScreen';
+import { UpdatePasswordScreen } from './components/UpdatePasswordScreen';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // --- Components ---
@@ -916,6 +918,8 @@ const AppContent = () => {
     <Routes>
       <Route path="/" element={<WelcomeScreen />} />
       <Route path="/login" element={<LoginScreen />} />
+      <Route path="/reset-password" element={<ResetPasswordScreen />} />
+      <Route path="/update-password" element={<UpdatePasswordScreen />} />
 
       <Route path="/dashboard-general" element={
         <ProtectedRoute requiredRole="admin">
