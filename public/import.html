@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importar Dados - WeValid</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+
+<body class="bg-gray-50 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">Importar Planilha de Estoque</h1>
+
+        <div class="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h3 class="font-semibold text-blue-800 mb-2">Instruções:</h3>
+            <ul class="list-disc list-inside text-sm text-blue-700 space-y-1">
+                <li>Salve sua planilha como arquivo <strong>.CSV</strong> (Separado por vírgulas ou ponto-e-vírgula).
+                </li>
+                <li>Certifique-se que as colunas <strong>SKU, DESCRICAO, CATEGORIA, PDV, ESTOQUE ATUAL, ESTOQUE EM
+                        TRANSITO</strong> existam.</li>
+                <li>Antes de importar, cadastre os códigos PDV nas lojas no banco de dados (ou edite manualmente na
+                    tabela 'stores').</li>
+            </ul>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Selecione o arquivo CSV</label>
+            <input type="file" id="csvFile" accept=".csv"
+                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+        </div>
+
+        <div id="preview" class="hidden mb-6 overflow-x-auto">
+            <h3 class="font-semibold mb-2">Pré-visualização (5 primeiras linhas)</h3>
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50" id="previewHead"></thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="previewBody"></tbody>
+            </table>
+        </div>
+
+        <div class="flex gap-4">
+            <button onclick="processImport()" id="btnImport"
+                class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled>
+                Importar Dados
+            </button>
+            <div id="status" class="flex items-center text-sm font-medium"></div>
+        </div>
+
+        <div id="log"
+            class="mt-6 p-4 bg-gray-900 text-green-400 font-mono text-xs rounded-lg h-64 overflow-y-auto hidden"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        // Configuração do Supabase (Hardcoded para facilitar uso local imediato)
+        const supabaseUrl = 'https://acensrxfxzqozakkklmy.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZW5zcnhmeHpxb3pha2trbG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2ODc2NDUsImV4cCI6MjA3OTI2MzY0NX0.rRsWLCmIcoyKkE5Qh_et53wO_xzLriOjrsfU0Rs85Lo';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        let parsedData = [];
+
+        document.getElementById('csvFile').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    parsedData = results.data;
+                    showPreview(results.data.slice(0, 5), results.meta.fields);
+                    document.getElementById('btnImport').disabled = false;
+                    log(`Arquivo carregado: ${results.data.length} linhas encontradas.`);
+                }
+            });
+        });
+
+        function showPreview(data, fields) {
+            const head = document.getElementById('previewHead');
+            const body = document.getElementById('previewBody');
+            document.getElementById('preview').classList.remove('hidden');
+
+            head.innerHTML = `<tr>${fields.map(f => `<th class="px-3 py-2 text-left">${f}</th>`).join('')}</tr>`;
+            body.innerHTML = data.map(row => `
+                <tr>${fields.map(f => `<td class="px-3 py-2 whitespace-nowrap">${row[f] || ''}</td>`).join('')}</tr>
+            `).join('');
+        }
+
+        function log(msg, type = 'info') {
+            const logDiv = document.getElementById('log');
+            logDiv.classList.remove('hidden');
+            const color = type === 'error' ? 'text-red-400' : 'text-green-400';
+            logDiv.innerHTML += `<div class="${color}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        window.processImport = async function () {
+            const btn = document.getElementById('btnImport');
+            btn.disabled = true;
+            btn.textContent = 'Processando...';
+
+            log('Iniciando importação...');
+
+            // 1. Carregar Lojas para mapear PDV -> ID
+            const { data: stores, error: storeError } = await supabase.from('stores').select('id, pdv_code, franchise_id');
+            if (storeError) {
+                log('Erro ao carregar lojas: ' + storeError.message, 'error');
+                return;
+            }
+
+            const storeMap = {}; // PDV -> {id, franchise_id}
+            stores.forEach(s => {
+                if (s.pdv_code) storeMap[s.pdv_code] = s;
+            });
+
+            log(`Lojas carregadas: ${stores.length}. PDVs mapeados: ${Object.keys(storeMap).length}`);
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const row of parsedData) {
+                try {
+                    // Mapear colunas (ajuste os nomes conforme seu CSV exato)
+                    const sku = row['SKU']?.split('-')[0].trim(); // Remove sufixos se houver "94113 -"
+                    const description = row['DESCRICAO'];
+                    const category = row['CATEGORIA'];
+                    const pdv = row['PDV'];
+                    const stockCurrent = parseInt(row['ESTOQUE ATUAL'] || '0');
+                    const stockTransit = parseInt(row['ESTOQUE EM TRANSITO'] || '0');
+                    const totalStock = stockCurrent + stockTransit;
+
+                    if (!sku || !pdv) {
+                        log(`Linha ignorada: SKU ou PDV faltando.`, 'error');
+                        continue;
+                    }
+
+                    // 1. Upsert Product (Criar ou Atualizar Produto)
+                    const { data: product, error: prodError } = await supabase
+                        .from('products')
+                        .upsert({
+                            code: sku,
+                            description: description,
+                            category: category
+                        }, { onConflict: 'code' })
+                        .select()
+                        .single();
+
+                    if (prodError) throw new Error(`Erro produto ${sku}: ${prodError.message}`);
+
+                    // 2. Encontrar Loja
+                    const store = storeMap[pdv];
+                    if (!store) {
+                        log(`Loja PDV ${pdv} não encontrada no banco. Pule este item.`, 'error');
+                        errorCount++;
+                        continue;
+                    }
+
+                    // 3. Inserir/Atualizar Estoque
+                    // Primeiro verificamos se já existe item para esse produto nessa loja
+                    const { data: existingItem } = await supabase
+                        .from('inventory_items')
+                        .select('id')
+                        .eq('store_id', store.id)
+                        .eq('product_code', sku) // Assumindo que inventory_items usa product_code como link ou tem product_id
+                        .maybeSingle();
+
+                    // Nota: Se inventory_items usa product_id (UUID), precisamos pegar do passo 1.
+                    // O schema atual parece usar product_code em inventory_items baseado no código anterior.
+                    // Vamos confirmar: inventory_items tem product_code? Sim, vi no código anterior.
+
+                    const inventoryData = {
+                        store_id: store.id,
+                        franchise_id: store.franchise_id,
+                        product_code: sku,
+                        quantity: totalStock,
+                        // expiry_date: ??? A planilha não tem validade explícita fácil, vamos deixar null ou manter se existir
+                        updated_at: new Date().toISOString()
+                    };
+
+                    let invError;
+                    if (existingItem) {
+                        const { error } = await supabase
+                            .from('inventory_items')
+                            .update(inventoryData)
+                            .eq('id', existingItem.id);
+                        invError = error;
+                    } else {
+                        const { error } = await supabase
+                            .from('inventory_items')
+                            .insert(inventoryData);
+                        invError = error;
+                    }
+
+                    if (invError) throw new Error(`Erro estoque ${sku}: ${invError.message}`);
+
+                    successCount++;
+                    if (successCount % 10 === 0) log(`Processados: ${successCount}...`);
+
+                } catch (err) {
+                    log(err.message, 'error');
+                    errorCount++;
+                }
+            }
+
+            log(`Importação concluída! Sucessos: ${successCount}, Erros: ${errorCount}`);
+            btn.disabled = false;
+            btn.textContent = 'Importar Dados';
+            alert('Importação finalizada! Verifique o log.');
+        };
+    </script>
+</body>
+
+</html>
