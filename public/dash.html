@@ -25,331 +25,318 @@
         <div class="container mx-auto px-4 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <img src="/perfume_icon.png" alt="WeValid" class="w-10 h-10 invert">
-                    <div>
-                        <h1 class="text-xl font-bold">WeValid Dashboard</h1>
-                        <p class="text-sm text-purple-100" id="userInfo">Carregando...</p>
-                    </div>
-                </div>
-                <button onclick="logout()" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all">
-                    Sair
-                </button>
-            </div>
-        </div>
-    </header>
+                    <main class="container mx-auto px-4 py-6">
+                        <!-- Filters -->
+                        <div class="bg-white rounded-lg shadow p-4 mb-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Franchise Filter (Admin only) -->
+                                <div id="franchiseFilterContainer" class="hidden">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Franquia</label>
+                                    <select id="franchiseFilter" onchange="filterByFranchise()"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        <option value="all">Todas as Franquias</option>
+                                    </select>
+                                </div>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-6">
-        <!-- Filters -->
-        <div class="bg-white rounded-lg shadow p-4 mb-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Franchise Filter (Admin only) -->
-                <div id="franchiseFilterContainer" class="hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Franquia</label>
-                    <select id="franchiseFilter" onchange="filterByFranchise()"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                        <option value="all">Todas as Franquias</option>
-                    </select>
-                </div>
+                                <!-- Store Filter -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Loja</label>
+                                    <select id="storeFilter" onchange="filterByStore()"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        <option value="all">Todas as Lojas</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
 
-                <!-- Store Filter -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Loja</label>
-                    <select id="storeFilter" onchange="filterByStore()"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                        <option value="all">Todas as Lojas</option>
-                    </select>
-                </div>
-            </div>
-        </div>
+                        <!-- Stats Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-white rounded-lg shadow p-4">
+                                <div class="text-sm text-gray-600">Funcionários</div>
+                                <div class="text-2xl font-bold text-purple-600" id="totalUsers">0</div>
+                            </div>
+                            <div class="bg-white rounded-lg shadow p-4">
+                                <div class="text-sm text-gray-600">Produtos</div>
+                                <div class="text-2xl font-bold text-blue-600" id="totalProducts">0</div>
+                            </div>
+                            <div class="bg-white rounded-lg shadow p-4">
+                                <div class="text-sm text-gray-600">Vencendo em 7 dias</div>
+                                <div class="text-2xl font-bold text-amber-600" id="expiringProducts">0</div>
+                            </div>
+                            <div class="bg-white rounded-lg shadow p-4">
+                                <div class="text-sm text-gray-600">Custo Total</div>
+                                <div class="text-2xl font-bold text-green-600" id="totalCost">R$ 0</div>
+                            </div>
+                        </div>
 
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white rounded-lg shadow p-4">
-                <div class="text-sm text-gray-600">Funcionários</div>
-                <div class="text-2xl font-bold text-purple-600" id="totalUsers">0</div>
-            </div>
-            <div class="bg-white rounded-lg shadow p-4">
-                <div class="text-sm text-gray-600">Produtos</div>
-                <div class="text-2xl font-bold text-blue-600" id="totalProducts">0</div>
-            </div>
-            <div class="bg-white rounded-lg shadow p-4">
-                <div class="text-sm text-gray-600">Vencendo em 7 dias</div>
-                <div class="text-2xl font-bold text-amber-600" id="expiringProducts">0</div>
-            </div>
-            <div class="bg-white rounded-lg shadow p-4">
-                <div class="text-sm text-gray-600">Custo Total</div>
-                <div class="text-2xl font-bold text-green-600" id="totalCost">R$ 0</div>
-            </div>
-        </div>
+                        <!-- Content Grid -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            <!-- Employees -->
+                            <div class="bg-white rounded-lg shadow">
+                                <div class="p-4 border-b">
+                                    <h2 class="text-lg font-semibold text-gray-800">Funcionários</h2>
+                                </div>
+                                <div id="employeesList" class="p-4 max-h-96 overflow-y-auto">
+                                    <p class="text-center text-gray-400 py-8">Carregando...</p>
+                                </div>
+                            </div>
 
-        <!-- Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <!-- Employees -->
-            <div class="bg-white rounded-lg shadow">
-                <div class="p-4 border-b">
-                    <h2 class="text-lg font-semibold text-gray-800">Funcionários</h2>
-                </div>
-                <div id="employeesList" class="p-4 max-h-96 overflow-y-auto">
-                    <p class="text-center text-gray-400 py-8">Carregando...</p>
-                </div>
-            </div>
+                            <!-- Products -->
+                            <div class="bg-white rounded-lg shadow">
+                                <div class="p-4 border-b">
+                                    <h2 class="text-lg font-semibold text-gray-800">Produtos por Validade</h2>
+                                </div>
+                                <div id="productsList" class="p-4 max-h-96 overflow-y-auto">
+                                    <p class="text-center text-gray-400 py-8">Carregando...</p>
+                                </div>
+                            </div>
 
-            <!-- Products -->
-            <div class="bg-white rounded-lg shadow">
-                <div class="p-4 border-b">
-                    <h2 class="text-lg font-semibold text-gray-800">Produtos por Validade</h2>
-                </div>
-                <div id="productsList" class="p-4 max-h-96 overflow-y-auto">
-                    <p class="text-center text-gray-400 py-8">Carregando...</p>
-                </div>
-            </div>
+                            <!-- Category Ranking (New) -->
+                            <div class="bg-white rounded-lg shadow lg:col-span-2">
+                                <div class="p-4 border-b">
+                                    <h2 class="text-lg font-semibold text-gray-800">Ranking por Categoria</h2>
+                                </div>
+                                <div id="categoryRanking" class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <p class="text-center text-gray-400 py-8 col-span-3">Carregando...</p>
+                                </div>
+                            </div>
+                        </div>
 
-            <!-- Category Ranking (New) -->
-            <div class="bg-white rounded-lg shadow lg:col-span-2">
-                <div class="p-4 border-b">
-                    <h2 class="text-lg font-semibold text-gray-800">Ranking por Categoria</h2>
-                </div>
-                <div id="categoryRanking" class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <p class="text-center text-gray-400 py-8 col-span-3">Carregando...</p>
-                </div>
-            </div>
-        </div>
+                        <!-- Transfer Suggestions -->
+                        <div class="bg-white rounded-lg shadow">
+                            <div class="p-4 border-b">
+                                <h2 class="text-lg font-semibold text-gray-800">Sugestões de Transferência (Estoque)
+                                </h2>
+                                <p class="text-sm text-gray-500">Baseado em estoque baixo (< 5) vs alto (> 20)</p>
+                            </div>
+                            <div id="transferSuggestions" class="p-4">
+                                <p class="text-center text-gray-400 py-8">Carregando...</p>
+                            </div>
+                        </div>
+                    </main>
 
-        <!-- Transfer Suggestions -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="p-4 border-b">
-                <h2 class="text-lg font-semibold text-gray-800">Sugestões de Transferência (Estoque)</h2>
-                <p class="text-sm text-gray-500">Baseado em estoque baixo (< 5) vs alto (> 20)</p>
-            </div>
-            <div id="transferSuggestions" class="p-4">
-                <p class="text-center text-gray-400 py-8">Carregando...</p>
-            </div>
-        </div>
-    </main>
+                    <script type="module">
+                        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+                        const supabase = createClient(
+                            'https://acensrxfxzqozakkklmy.supabase.co',
+                            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZW5zcnhmeHpxb3pha2trbG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2ODc2NDUsImV4cCI6MjA3OTI2MzY0NX0.rRsWLCmIcoyKkE5Qh_et53wO_xzLriOjrsfU0Rs85Lo'
+                        );
 
-        const supabase = createClient(
-            'https://acensrxfxzqozakkklmy.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZW5zcnhmeHpxb3pha2trbG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2ODc2NDUsImV4cCI6MjA3OTI2MzY0NX0.rRsWLCmIcoyKkE5Qh_et53wO_xzLriOjrsfU0Rs85Lo'
-        );
+                        let currentUser = null;
+                        let currentProfile = null;
+                        let allFranchises = [];
+                        let allEmployees = [];
+                        let allProducts = [];
+                        let allStores = [];
 
-        let currentUser = null;
-        let currentProfile = null;
-        let allFranchises = [];
-        let allEmployees = [];
-        let allProducts = [];
-        let allStores = [];
+                        // Check auth
+                        async function checkAuth() {
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (!session) {
+                                window.location.href = '/dash-login.html';
+                                return null;
+                            }
+                            return session.user;
+                        }
 
-        // Check auth
-        async function checkAuth() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                window.location.href = '/dash-login.html';
-                return null;
-            }
-            return session.user;
-        }
+                        // Logout
+                        window.logout = async function () {
+                            await supabase.auth.signOut();
+                            window.location.href = '/dash-login.html';
+                        };
 
-        // Logout
-        window.logout = async function () {
-            await supabase.auth.signOut();
-            window.location.href = '/dash-login.html';
-        };
+                        // Load initial data
+                        async function loadData() {
+                            currentUser = await checkAuth();
+                            if (!currentUser) return;
 
-        // Load initial data
-        async function loadData() {
-            currentUser = await checkAuth();
-            if (!currentUser) return;
+                            const { data: profile, error: profileError } = await supabase
+                                .from('user_profiles')
+                                .select('*')
+                                .eq('id', currentUser.id)
+                                .single();
 
-            const { data: profile, error: profileError } = await supabase
-                .from('user_profiles')
-                .select('*')
-                .eq('id', currentUser.id)
-                .single();
+                            if (profileError) {
+                                console.error('Profile error:', profileError);
+                                alert('Erro ao carregar perfil: ' + profileError.message);
+                                return;
+                            }
 
-            if (profileError) {
-                console.error('Profile error:', profileError);
-                alert('Erro ao carregar perfil: ' + profileError.message);
-                return;
-            }
+                            if (!profile) {
+                                alert('Perfil não encontrado');
+                                return;
+                            }
 
-            if (!profile) {
-                alert('Perfil não encontrado');
-                return;
-            }
+                            currentProfile = profile;
+                            document.getElementById('userInfo').textContent = `${profile.full_name || profile.email} - ${getRoleName(profile.role)}`;
 
-            currentProfile = profile;
-            document.getElementById('userInfo').textContent = `${profile.full_name || profile.email} - ${getRoleName(profile.role)}`;
+                            // Admin: load all franchises
+                            if (profile.role === 'admin') {
+                                const { data: franchises } = await supabase
+                                    .from('franchises')
+                                    .select('*')
+                                    .order('name');
 
-            // Admin: load all franchises
-            if (profile.role === 'admin') {
-                const { data: franchises } = await supabase
-                    .from('franchises')
-                    .select('*')
-                    .order('name');
+                                allFranchises = franchises || [];
+                                populateFranchiseFilter();
+                                document.getElementById('franchiseFilterContainer').classList.remove('hidden');
 
-                allFranchises = franchises || [];
-                populateFranchiseFilter();
-                document.getElementById('franchiseFilterContainer').classList.remove('hidden');
+                                const { data: stores } = await supabase
+                                    .from('stores')
+                                    .select('*')
+                                    .order('name');
+                                allStores = stores || [];
+                            } else {
+                                // Manager/Store User: only their franchise stores
+                                if (!profile.franchise_id) {
+                                    alert('Usuário sem franquia associada');
+                                    return;
+                                }
 
-                const { data: stores } = await supabase
-                    .from('stores')
-                    .select('*')
-                    .order('name');
-                allStores = stores || [];
-            } else {
-                // Manager/Store User: only their franchise stores
-                if (!profile.franchise_id) {
-                    alert('Usuário sem franquia associada');
-                    return;
-                }
+                                const { data: stores } = await supabase
+                                    .from('stores')
+                                    .select('*')
+                                    .eq('franchise_id', profile.franchise_id)
+                                    .order('name');
+                                allStores = stores || [];
+                            }
 
-                const { data: stores } = await supabase
-                    .from('stores')
-                    .select('*')
-                    .eq('franchise_id', profile.franchise_id)
-                    .order('name');
-                allStores = stores || [];
-            }
+                            populateStoreFilter();
+                            await loadDashboardData();
+                        }
 
-            populateStoreFilter();
-            await loadDashboardData();
-        }
+                        function getRoleName(role) {
+                            const names = { admin: 'Administrador', manager: 'Gestor', store_user: 'Operador' };
+                            return names[role] || role;
+                        }
 
-        function getRoleName(role) {
-            const names = { admin: 'Administrador', manager: 'Gestor', store_user: 'Operador' };
-            return names[role] || role;
-        }
+                        function populateFranchiseFilter() {
+                            const select = document.getElementById('franchiseFilter');
+                            select.innerHTML = '<option value="all">Todas as Franquias</option>';
+                            allFranchises.forEach(f => {
+                                const option = document.createElement('option');
+                                option.value = f.id;
+                                option.textContent = f.name;
+                                select.appendChild(option);
+                            });
+                        }
 
-        function populateFranchiseFilter() {
-            const select = document.getElementById('franchiseFilter');
-            select.innerHTML = '<option value="all">Todas as Franquias</option>';
-            allFranchises.forEach(f => {
-                const option = document.createElement('option');
-                option.value = f.id;
-                option.textContent = f.name;
-                select.appendChild(option);
-            });
-        }
+                        function populateStoreFilter() {
+                            const select = document.getElementById('storeFilter');
+                            select.innerHTML = '<option value="all">Todas as Lojas</option>';
+                            allStores.forEach(s => {
+                                const option = document.createElement('option');
+                                option.value = s.id;
+                                option.textContent = s.name;
+                                select.appendChild(option);
+                            });
+                        }
 
-        function populateStoreFilter() {
-            const select = document.getElementById('storeFilter');
-            select.innerHTML = '<option value="all">Todas as Lojas</option>';
-            allStores.forEach(s => {
-                const option = document.createElement('option');
-                option.value = s.id;
-                option.textContent = s.name;
-                select.appendChild(option);
-            });
-        }
+                        window.filterByFranchise = async function () {
+                            const selectedFranchise = document.getElementById('franchiseFilter').value;
 
-        window.filterByFranchise = async function () {
-            const selectedFranchise = document.getElementById('franchiseFilter').value;
+                            if (selectedFranchise === 'all') {
+                                const { data: stores } = await supabase.from('stores').select('*').order('name');
+                                allStores = stores || [];
+                            } else {
+                                const { data: stores } = await supabase
+                                    .from('stores')
+                                    .select('*')
+                                    .eq('franchise_id', selectedFranchise)
+                                    .order('name');
+                                allStores = stores || [];
+                            }
 
-            if (selectedFranchise === 'all') {
-                const { data: stores } = await supabase.from('stores').select('*').order('name');
-                allStores = stores || [];
-            } else {
-                const { data: stores } = await supabase
-                    .from('stores')
-                    .select('*')
-                    .eq('franchise_id', selectedFranchise)
-                    .order('name');
-                allStores = stores || [];
-            }
+                            populateStoreFilter();
+                            document.getElementById('storeFilter').value = 'all';
+                            await loadDashboardData();
+                        };
 
-            populateStoreFilter();
-            document.getElementById('storeFilter').value = 'all';
-            await loadDashboardData();
-        };
+                        window.filterByStore = async function () {
+                            updateDashboard();
+                        };
 
-        window.filterByStore = async function () {
-            updateDashboard();
-        };
+                        async function loadDashboardData() {
+                            const selectedFranchise = currentProfile.role === 'admin'
+                                ? document.getElementById('franchiseFilter').value
+                                : currentProfile.franchise_id;
 
-        async function loadDashboardData() {
-            const selectedFranchise = currentProfile.role === 'admin'
-                ? document.getElementById('franchiseFilter').value
-                : currentProfile.franchise_id;
+                            let query = supabase.from('user_profiles').select('*, user_stores(stores(id, name))').eq('status', 'approved');
+                            if (selectedFranchise !== 'all') query = query.eq('franchise_id', selectedFranchise);
+                            const { data: employees } = await query;
 
-            let query = supabase.from('user_profiles').select('*, user_stores(stores(id, name))').eq('status', 'approved');
-            if (selectedFranchise !== 'all') query = query.eq('franchise_id', selectedFranchise);
-            const { data: employees } = await query;
+                            allEmployees = employees?.map(e => ({
+                                ...e,
+                                stores: e.user_stores?.map(us => us.stores) || []
+                            })) || [];
 
-            allEmployees = employees?.map(e => ({
-                ...e,
-                stores: e.user_stores?.map(us => us.stores) || []
-            })) || [];
+                            query = supabase.from('inventory_items').select('*, products(description, category, unit_cost), stores(name)').order('expiry_date', { ascending: true });
+                            if (selectedFranchise !== 'all') query = query.eq('franchise_id', selectedFranchise);
+                            const { data: products } = await query;
 
-            query = supabase.from('inventory_items').select('*, products(description, category, unit_cost), stores(name)').order('expiry_date', { ascending: true });
-            if (selectedFranchise !== 'all') query = query.eq('franchise_id', selectedFranchise);
-            const { data: products } = await query;
+                            allProducts = products?.map(p => ({
+                                ...p,
+                                product_description: p.products?.description,
+                                category: p.products?.category,
+                                store_name: p.stores?.name
+                            })) || [];
 
-            allProducts = products?.map(p => ({
-                ...p,
-                product_description: p.products?.description,
-                category: p.products?.category,
-                store_name: p.stores?.name
-            })) || [];
+                            updateDashboard();
+                        }
 
-            updateDashboard();
-        }
+                        function updateDashboard() {
+                            const selectedStore = document.getElementById('storeFilter').value;
+                            let filteredEmployees = allEmployees;
+                            let filteredProducts = allProducts;
 
-        function updateDashboard() {
-            const selectedStore = document.getElementById('storeFilter').value;
-            let filteredEmployees = allEmployees;
-            let filteredProducts = allProducts;
+                            if (selectedStore !== 'all') {
+                                filteredEmployees = allEmployees.filter(e =>
+                                    e.role === 'manager' || e.stores.some(s => s.id === selectedStore)
+                                );
+                                filteredProducts = allProducts.filter(p => p.store_id === selectedStore);
+                            }
 
-            if (selectedStore !== 'all') {
-                filteredEmployees = allEmployees.filter(e =>
-                    e.role === 'manager' || e.stores.some(s => s.id === selectedStore)
-                );
-                filteredProducts = allProducts.filter(p => p.store_id === selectedStore);
-            }
+                            document.getElementById('totalUsers').textContent = filteredEmployees.length;
+                            document.getElementById('totalProducts').textContent = filteredProducts.length;
 
-            document.getElementById('totalUsers').textContent = filteredEmployees.length;
-            document.getElementById('totalProducts').textContent = filteredProducts.length;
+                            const today = new Date();
+                            const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+                            const expiring = filteredProducts.filter(p => {
+                                const expiryDate = new Date(p.expiry_date);
+                                return expiryDate >= today && expiryDate <= sevenDaysFromNow;
+                            });
+                            document.getElementById('expiringProducts').textContent = expiring.length;
 
-            const today = new Date();
-            const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-            const expiring = filteredProducts.filter(p => {
-                const expiryDate = new Date(p.expiry_date);
-                return expiryDate >= today && expiryDate <= sevenDaysFromNow;
-            });
-            document.getElementById('expiringProducts').textContent = expiring.length;
+                            const totalCost = filteredProducts.reduce((sum, p) => sum + (p.total_cost || 0), 0);
+                            document.getElementById('totalCost').textContent = `R$ ${totalCost.toFixed(2)}`;
 
-            const totalCost = filteredProducts.reduce((sum, p) => sum + (p.total_cost || 0), 0);
-            document.getElementById('totalCost').textContent = `R$ ${totalCost.toFixed(2)}`;
+                            renderEmployees(filteredEmployees);
+                            renderProducts(filteredProducts);
+                            renderCategoryRanking(filteredProducts);
+                            renderTransferSuggestions(allProducts);
+                        }
 
-            renderEmployees(filteredEmployees);
-            renderProducts(filteredProducts);
-            renderCategoryRanking(filteredProducts);
-            renderTransferSuggestions(allProducts);
-        }
+                        function renderCategoryRanking(products) {
+                            const container = document.getElementById('categoryRanking');
+                            if (products.length === 0) {
+                                container.innerHTML = '<p class="text-center text-gray-400 py-8 col-span-3">Nenhum dado disponível</p>';
+                                return;
+                            }
 
-        function renderCategoryRanking(products) {
-            const container = document.getElementById('categoryRanking');
-            if (products.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 py-8 col-span-3">Nenhum dado disponível</p>';
-                return;
-            }
+                            const categories = {};
+                            products.forEach(p => {
+                                const cat = p.category || 'Sem Categoria';
+                                if (!categories[cat]) categories[cat] = { count: 0, value: 0 };
+                                categories[cat].count += p.quantity || 0;
+                                categories[cat].value += (p.total_cost || 0);
+                            });
 
-            const categories = {};
-            products.forEach(p => {
-                const cat = p.category || 'Sem Categoria';
-                if (!categories[cat]) categories[cat] = { count: 0, value: 0 };
-                categories[cat].count += p.quantity || 0;
-                categories[cat].value += (p.total_cost || 0);
-            });
+                            const sortedCategories = Object.entries(categories)
+                                .sort(([, a], [, b]) => b.count - a.count)
+                                .slice(0, 6);
 
-            const sortedCategories = Object.entries(categories)
-                .sort(([, a], [, b]) => b.count - a.count)
-                .slice(0, 6);
-
-            container.innerHTML = sortedCategories.map(([name, data], index) => `
+                            container.innerHTML = sortedCategories.map(([name, data], index) => `
                 <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-sm font-bold text-gray-600">#${index + 1} ${name}</span>
@@ -360,20 +347,20 @@
                     </div>
                 </div>
             `).join('');
-        }
+                        }
 
-        function renderEmployees(employees) {
-            const container = document.getElementById('employeesList');
-            if (employees.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhum funcionário encontrado</p>';
-                return;
-            }
+                        function renderEmployees(employees) {
+                            const container = document.getElementById('employeesList');
+                            if (employees.length === 0) {
+                                container.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhum funcionário encontrado</p>';
+                                return;
+                            }
 
-            container.innerHTML = employees.map(emp => {
-                const roleColors = { admin: 'bg-red-100 text-red-700', manager: 'bg-purple-100 text-purple-700', store_user: 'bg-blue-100 text-blue-700' };
-                const storeNames = emp.role === 'manager' ? 'Todas as lojas' : emp.stores.map(s => s.name).join(', ') || 'Sem loja';
+                            container.innerHTML = employees.map(emp => {
+                                const roleColors = { admin: 'bg-red-100 text-red-700', manager: 'bg-purple-100 text-purple-700', store_user: 'bg-blue-100 text-blue-700' };
+                                const storeNames = emp.role === 'manager' ? 'Todas as lojas' : emp.stores.map(s => s.name).join(', ') || 'Sem loja';
 
-                return `
+                                return `
                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
                         <div>
                             <p class="font-semibold text-gray-800">${emp.full_name || 'Sem nome'}</p>
@@ -383,25 +370,25 @@
                         <span class="px-3 py-1 rounded-full text-xs font-semibold ${roleColors[emp.role]}">${getRoleName(emp.role)}</span>
                     </div>
                 `;
-            }).join('');
-        }
+                            }).join('');
+                        }
 
-        function renderProducts(products) {
-            const container = document.getElementById('productsList');
-            if (products.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhum produto encontrado</p>';
-                return;
-            }
+                        function renderProducts(products) {
+                            const container = document.getElementById('productsList');
+                            if (products.length === 0) {
+                                container.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhum produto encontrado</p>';
+                                return;
+                            }
 
-            container.innerHTML = products.slice(0, 20).map(product => {
-                const expiryDate = new Date(product.expiry_date);
-                const today = new Date();
-                const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
-                let urgencyColor = 'text-green-600';
-                if (daysUntilExpiry <= 7) urgencyColor = 'text-red-600 font-bold';
-                else if (daysUntilExpiry <= 30) urgencyColor = 'text-amber-600';
+                            container.innerHTML = products.slice(0, 20).map(product => {
+                                const expiryDate = new Date(product.expiry_date);
+                                const today = new Date();
+                                const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                                let urgencyColor = 'text-green-600';
+                                if (daysUntilExpiry <= 7) urgencyColor = 'text-red-600 font-bold';
+                                else if (daysUntilExpiry <= 30) urgencyColor = 'text-amber-600';
 
-                return `
+                                return `
                     <div class="p-3 bg-gray-50 rounded-lg mb-2">
                         <div class="flex justify-between items-start mb-1">
                             <div class="flex-1">
@@ -416,53 +403,53 @@
                         </div>
                     </div>
                 `;
-            }).join('');
-        }
-
-        function renderTransferSuggestions(products) {
-            const container = document.getElementById('transferSuggestions');
-
-            // Logic: Find stores with LOW stock (< 5) and match with stores with HIGH stock (> 20) of same product
-            const LOW_STOCK_THRESHOLD = 5;
-            const HIGH_STOCK_THRESHOLD = 20;
-
-            const suggestions = [];
-
-            // Group products by code
-            const productsByCode = {};
-            products.forEach(p => {
-                if (!productsByCode[p.product_code]) productsByCode[p.product_code] = [];
-                productsByCode[p.product_code].push(p);
-            });
-
-            Object.entries(productsByCode).forEach(([code, items]) => {
-                const lowStockStores = items.filter(i => (i.quantity || 0) <= LOW_STOCK_THRESHOLD);
-                const highStockStores = items.filter(i => (i.quantity || 0) >= HIGH_STOCK_THRESHOLD);
-
-                if (lowStockStores.length > 0 && highStockStores.length > 0) {
-                    lowStockStores.forEach(low => {
-                        // Find best source (highest stock)
-                        const sources = highStockStores
-                            .filter(h => h.store_id !== low.store_id)
-                            .sort((a, b) => b.quantity - a.quantity);
-
-                        if (sources.length > 0) {
-                            suggestions.push({
-                                product: low,
-                                sources: sources
-                            });
+                            }).join('');
                         }
-                    });
-                }
-            });
 
-            if (suggestions.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhuma sugestão de transferência baseada em estoque.</p>';
-                return;
-            }
+                        function renderTransferSuggestions(products) {
+                            const container = document.getElementById('transferSuggestions');
 
-            container.innerHTML = suggestions.slice(0, 10).map(s => {
-                return `
+                            // Logic: Find stores with LOW stock (< 5) and match with stores with HIGH stock (> 20) of same product
+                            const LOW_STOCK_THRESHOLD = 5;
+                            const HIGH_STOCK_THRESHOLD = 20;
+
+                            const suggestions = [];
+
+                            // Group products by code
+                            const productsByCode = {};
+                            products.forEach(p => {
+                                if (!productsByCode[p.product_code]) productsByCode[p.product_code] = [];
+                                productsByCode[p.product_code].push(p);
+                            });
+
+                            Object.entries(productsByCode).forEach(([code, items]) => {
+                                const lowStockStores = items.filter(i => (i.quantity || 0) <= LOW_STOCK_THRESHOLD);
+                                const highStockStores = items.filter(i => (i.quantity || 0) >= HIGH_STOCK_THRESHOLD);
+
+                                if (lowStockStores.length > 0 && highStockStores.length > 0) {
+                                    lowStockStores.forEach(low => {
+                                        // Find best source (highest stock)
+                                        const sources = highStockStores
+                                            .filter(h => h.store_id !== low.store_id)
+                                            .sort((a, b) => b.quantity - a.quantity);
+
+                                        if (sources.length > 0) {
+                                            suggestions.push({
+                                                product: low,
+                                                sources: sources
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+
+                            if (suggestions.length === 0) {
+                                container.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhuma sugestão de transferência baseada em estoque.</p>';
+                                return;
+                            }
+
+                            container.innerHTML = suggestions.slice(0, 10).map(s => {
+                                return `
                     <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-3">
                         <h4 class="font-semibold text-gray-800 mb-1">${s.product.product_description || 'Produto ' + s.product.product_code}</h4>
                         <p class="text-sm text-gray-600 mb-2">
@@ -479,11 +466,11 @@
                         </div>
                     </div>
                 `;
-            }).join('');
-        }
+                            }).join('');
+                        }
 
-        loadData();
-    </script>
+                        loadData();
+                    </script>
 </body>
 
 </html>
