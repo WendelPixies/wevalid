@@ -11,17 +11,19 @@
 
 <body class="bg-gray-50 min-h-screen p-8">
     <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
-        <h1 class="text-2xl font-bold mb-6 text-gray-800">Importar Planilha de Estoque</h1>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Importar Planilha de Estoque</h1>
+            <a href="/dash.html" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">&larr; Voltar ao
+                Dashboard</a>
+        </div>
 
         <div class="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
             <h3 class="font-semibold text-blue-800 mb-2">Instruções:</h3>
             <ul class="list-disc list-inside text-sm text-blue-700 space-y-1">
-                <li>Salve sua planilha como arquivo <strong>.CSV</strong> (Separado por vírgulas ou ponto-e-vírgula).
-                </li>
-                <li>Certifique-se que as colunas <strong>SKU, DESCRICAO, CATEGORIA, PDV, ESTOQUE ATUAL, ESTOQUE EM
-                        TRANSITO</strong> existam.</li>
-                <li>Antes de importar, cadastre os códigos PDV nas lojas no banco de dados (ou edite manualmente na
-                    tabela 'stores').</li>
+                <li>Salve sua planilha como arquivo <strong>.CSV</strong>.</li>
+                <li>Colunas necessárias: <strong>SKU, DESCRICAO, CATEGORIA, PDV, ESTOQUE ATUAL, ESTOQUE EM
+                        TRANSITO</strong>.</li>
+                <li>O sistema usará sua conta logada para realizar a importação.</li>
             </ul>
         </div>
 
@@ -55,12 +57,23 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-        // Configuração do Supabase (Hardcoded para facilitar uso local imediato)
         const supabaseUrl = 'https://acensrxfxzqozakkklmy.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZW5zcnhmeHpxb3pha2trbG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2ODc2NDUsImV4cCI6MjA3OTI2MzY0NX0.rRsWLCmIcoyKkE5Qh_et53wO_xzLriOjrsfU0Rs85Lo';
         const supabase = createClient(supabaseUrl, supabaseKey);
 
         let parsedData = [];
+
+        // Verificar autenticação ao carregar
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                alert('Você precisa estar logado para importar dados.');
+                window.location.href = '/dash-login.html';
+                return;
+            }
+            console.log('Usuário autenticado:', session.user.email);
+        }
+        checkAuth();
 
         document.getElementById('csvFile').addEventListener('change', function (e) {
             const file = e.target.files[0];
@@ -108,6 +121,7 @@
             const { data: stores, error: storeError } = await supabase.from('stores').select('id, pdv_code, franchise_id');
             if (storeError) {
                 log('Erro ao carregar lojas: ' + storeError.message, 'error');
+                btn.disabled = false;
                 return;
             }
 
@@ -124,7 +138,7 @@
             for (const row of parsedData) {
                 try {
                     // Mapear colunas (ajuste os nomes conforme seu CSV exato)
-                    const sku = row['SKU']?.split('-')[0].trim(); // Remove sufixos se houver "94113 -"
+                    const sku = row['SKU']?.split('-')[0].trim();
                     const description = row['DESCRICAO'];
                     const category = row['CATEGORIA'];
                     const pdv = row['PDV'];
@@ -133,11 +147,11 @@
                     const totalStock = stockCurrent + stockTransit;
 
                     if (!sku || !pdv) {
-                        log(`Linha ignorada: SKU ou PDV faltando.`, 'error');
+                        // log(`Linha ignorada: SKU ou PDV faltando.`, 'error');
                         continue;
                     }
 
-                    // 1. Upsert Product (Criar ou Atualizar Produto)
+                    // 1. Upsert Product
                     const { data: product, error: prodError } = await supabase
                         .from('products')
                         .upsert({
@@ -153,30 +167,24 @@
                     // 2. Encontrar Loja
                     const store = storeMap[pdv];
                     if (!store) {
-                        log(`Loja PDV ${pdv} não encontrada no banco. Pule este item.`, 'error');
+                        log(`Loja PDV ${pdv} não encontrada.`, 'error');
                         errorCount++;
                         continue;
                     }
 
                     // 3. Inserir/Atualizar Estoque
-                    // Primeiro verificamos se já existe item para esse produto nessa loja
                     const { data: existingItem } = await supabase
                         .from('inventory_items')
                         .select('id')
                         .eq('store_id', store.id)
-                        .eq('product_code', sku) // Assumindo que inventory_items usa product_code como link ou tem product_id
+                        .eq('product_code', sku)
                         .maybeSingle();
-
-                    // Nota: Se inventory_items usa product_id (UUID), precisamos pegar do passo 1.
-                    // O schema atual parece usar product_code em inventory_items baseado no código anterior.
-                    // Vamos confirmar: inventory_items tem product_code? Sim, vi no código anterior.
 
                     const inventoryData = {
                         store_id: store.id,
                         franchise_id: store.franchise_id,
                         product_code: sku,
                         quantity: totalStock,
-                        // expiry_date: ??? A planilha não tem validade explícita fácil, vamos deixar null ou manter se existir
                         updated_at: new Date().toISOString()
                     };
 
