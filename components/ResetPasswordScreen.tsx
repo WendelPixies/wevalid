@@ -1,0 +1,89 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../services/supabaseClient';
+
+export const ResetPasswordScreen = () => {
+    const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    const handleResetPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!email) return;
+
+        setLoading(true);
+        setMessage(null);
+
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/update-password`,
+            });
+
+            if (error) throw error;
+
+            setMessage({
+                type: 'success',
+                text: 'Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.'
+            });
+        } catch (error: any) {
+            setMessage({
+                type: 'error',
+                text: error.message || 'Erro ao enviar e-mail de recuperação.'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-background-light dark:bg-background-dark p-4">
+            <div className="flex w-full max-w-sm flex-col items-center">
+                <div className="mb-8">
+                    <img src="/perfume_icon.png" alt="Logo" className="w-24 h-24 object-contain" />
+                </div>
+                <h1 className="text-[#111418] dark:text-white tracking-tight text-[28px] font-bold leading-tight text-center pb-4">
+                    Recuperar Senha
+                </h1>
+                <p className="text-slate-500 dark:text-slate-400 text-center mb-8">
+                    Digite seu e-mail para receber o link de redefinição.
+                </p>
+
+                <form onSubmit={handleResetPassword} className="w-full space-y-4">
+                    <label className="block">
+                        <input
+                            type="email"
+                            placeholder="Seu e-mail cadastrado"
+                            className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#111418] dark:text-white focus:outline-0 focus:ring-0 border border-[#dce0e5] dark:border-slate-600 bg-white dark:bg-slate-800 focus:border-[#dce0e5] h-14 placeholder:text-[#637588] p-4 text-base font-normal leading-normal"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </label>
+
+                    {message && (
+                        <div className={`p-3 rounded-lg text-sm text-center ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {message.text}
+                        </div>
+                    )}
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-5 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {loading ? 'Enviando...' : 'Enviar Link'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => navigate('/')}
+                        className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-5 bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-base font-bold leading-normal tracking-[0.015em] w-full"
+                    >
+                        Voltar para Login
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
