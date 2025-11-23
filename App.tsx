@@ -82,7 +82,7 @@ const WelcomeScreen = () => {
               Controle de Validade Inteligente
             </h2>
             <p className="text-slate-600 dark:text-slate-300 text-base font-normal leading-normal pb-3 pt-1 px-4 text-center font-display">
-              Gerencie a validade dos produtos de forma eficiente, reduza perdas e otimize o trabalho da sua equipe.
+              Gerencie a validade dos produtos de O Boticário de forma eficiente reduzindo perdas.
             </p>
           </div>
         </div>
