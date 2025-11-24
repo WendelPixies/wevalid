@@ -187,7 +187,7 @@
             return session.user;
         }
 
-        window.logout = async function()  {
+        window.logout = async function () {
             await supabase.auth.signOut();
             window.location.href = '/';
         };
@@ -258,7 +258,7 @@
             });
         }
 
-        window.filterByStore = function() {
+        window.filterByStore = function () {
             updateDashboard();
         };
 
@@ -269,16 +269,16 @@
 
             if (selectedStore !== 'all') {
                 filteredEmployees = allEmployees.filter(e =>
-                    e.role === 'manager' || e.stores.some(s = > s.id === selectedStore)
+                    e.role === 'manager' || e.stores.some(s => s.id === selectedStore)
                 );
                 filteredProducts = allProducts.filter(p => p.store_id === selectedStore);
             }
 
-            docmentById('totalUsers').textContent = filteredEmployees.length;
+            document.getElementById('totalUsers').textContent = filteredEmployees.length;
             document.getElementById('totalProducts').textContent = filteredProducts.length;
 
             const today = new Date();
-           const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
             const expiring = filteredProducts.filter(p => {
                 const expiryDate = new Date(p.expiry_date);
                 return expiryDate >= today && expiryDate <= sevenDaysFromNow;
@@ -313,7 +313,7 @@
                             <p class="text-sm text-slate-500">${emp.email}</p>
                             <p class="text-xs text-slate-400 mt-1">${storeNames}</p>
                         </div>
-                        <span class="px-3 py-1 rounded-full text-xs font-bold ${roleColors[emp.role]}"${roleNames[emp.role]}</span>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold ${roleColors[emp.role]}">${roleNames[emp.role]}</span>
                    </div>
                 `;
             }).join('');
@@ -340,7 +340,7 @@
                             <div class="flex-1">
                                 <p class="font-bold text-slate-800">${product.product_description || 'Sem descrição'}</p>
                                 <p class="text-sm text-slate-500">Código: ${product.product_code} | ${product.store_name}</p>
-                                ${product.category ? `<sp-block mt-1 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">${product.category}</span>` : ''}
+                                ${product.category ? `<span class="block mt-1 px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">${product.category}</span>` : ''}
                             </div>
                             <span class="text-lg font-bold text-slate-700">×${product.quantity}</span>
                         </div>
@@ -370,7 +370,7 @@
                 return;
             }
 
-            const colors = ['from-purple-500 to-purple-600', 'from-blue-500 to-blue-600', 'from-green-500 to-green-600', 'from-amber-500 to-amber-600', 'fro-red-600', 'from-indigo-500 to-indigo-600'];
+            const colors = ['from-purple-500 to-purple-600', 'from-blue-500 to-blue-600', 'from-green-500 to-green-600', 'from-amber-500 to-amber-600', 'from-red-500 to-red-600', 'from-indigo-500 to-indigo-600'];
             container.innerHTML = sorted.map(([category, stats], index) => `
                 <div class="bg-gradient-to-br ${colors[index % colors.length]} text-white rounded-xl p-6 card-hover">
                     <div class="flex items-center gap-2 mb-4">
@@ -417,13 +417,13 @@
             });
 
             if (suggestions.length === 0) {
-                container.innerHTML = '<p class="text-center text-slate-400 py-8">Nenhuma sugestã trncia no momento</p>';
+                container.innerHTML = '<p class="text-center text-slate-400 py-8">Nenhuma sugestão de transferência no momento</p>';
                 return;
             }
 
             container.innerHTML = suggestions.map(suggestion => {
                 const expiryDate = new Date(suggestion.product.expiry_date);
-                const daysUntilExpiry = Math.ceil((expiryDate - expiryDate) / (1000 * 60 * 60 * 24));
+                const daysUntilExpiry = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
 
                 return `
                     <div class="p-4 bg-orange-50 border-2 border-orange-200 rounded-xl hover:bg-orange-100 transition-colors">

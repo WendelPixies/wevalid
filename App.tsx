@@ -13,7 +13,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // --- Components ---
 
-const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, requiredRole?: 'admin' | 'manager' | 'store_user' }) => {
+const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: 'admin' | 'manager' | 'store_user' }) => {
   const { user, profile, loading } = useAuth();
 
   if (loading) return <div className="flex h-screen items-center justify-center">Carregando...</div>;
