@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Usuários - WeValid</title>
+    <link rel="icon" type="image/png" href="/perfume_icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <header class="gradient-bg text-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <button onclick="window.location.href='/dashboard.html'"
+                        class="hover:bg-white/20 p-2 rounded-lg transition-all">
+                        <span class="material-symbols-outlined">arrow_back</span>
+                    </button>
+                    <div>
+                        <h1 class="text-2xl font-bold">Gestão de Usuários</h1>
+                        <p class="text-purple-100 text-sm" id="franchiseName">Carregando...</p>
+                    </div>
+                </div>
+                <button onclick="logout()"
+                    class="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all">
+                    <span class="material-symbols-outlined">logout</span>
+                    <span class="font-medium">Sair</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-slate-800">Equipe da Franquia</h2>
+                <button onclick="showAddStoreModal()"
+                    class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-all">
+                    <span class="material-symbols-outlined">add_business</span>
+                    Nova Loja
+                </button>
+            </div>
+            <div id="usersList" class="space-y-4">
+                <p class="text-center text-slate-400 py-8">Carregando...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Editar Usuário -->
+    <div id="editUserModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 class="text-xl font-bold text-slate-800 mb-4">Editar Usuário</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Nome</label>
+                    <input type="text" id="editUserName"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Função Atual</label>
+                    <div id="currentRole" class="px-4 py-3 bg-slate-100 rounded-lg font-semibold"></div>
+                </div>
+                <div id="promoteSection" class="hidden">
+                    <button onclick="promoteUser()"
+                        class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">upgrade</span>
+                        Promover a Gestor
+                    </button>
+                </div>
+                <div id="demoteSection" class="hidden">
+                    <button onclick="demoteUser()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">downgrade</span>
+                        Tornar Operador
+                    </button>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeEditModal()"
+                    class="flex-1 px-4 py-3 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg transition-all">
+                    Cancelar
+                </button>
+                <button onclick="saveUser()"
+                    class="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all">
+                    Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Adicionar Loja -->
+    <div id="addStoreModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 class="text-xl font-bold text-slate-800 mb-4">Nova Loja</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Nome da Loja</label>
+                    <input type="text" id="newStoreName" placeholder="Ex: Loja 01 - Centro"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Responsável</label>
+                    <select id="newStoreManager"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none">
+                        <option value="">Selecione um usuário...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeAddStoreModal()"
+                    class="flex-1 px-4 py-3 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg transition-all">
+                    Cancelar
+                </button>
+                <button onclick="createStore()"
+                    class="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all">
+                    Criar Loja
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const SUPABASE_URL = 'https://acensrxfxzqozakkklmy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZW5zcnhmeHpxb3pha2trbG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2ODc2NDUsImV4cCI6MjA3OTI2MzY0NX0.rRsWLCmIcoyKkE5Qh_et53wO_xzLriOjrsfU0Rs85Lo';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let currentFranchiseId = null;
+        let allUsers = [];
+        let editingUserId = null;
+
+        window.logout = async function () {
+            await supabase.auth.signOut();
+            window.location.href = '/';
+        };
+
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.href = '/dash-login.html';
+                return null;
+            }
+            return session.user;
+        }
+
+        async function loadData() {
+            currentUser = await checkAuth();
+            if (!currentUser) return;
+
+            const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('*, franchises(name)')
+                .eq('id', currentUser.id)
+                .single();
+
+            if (!profile || !profile.franchise_id) {
+                alert('Usuário sem franquia associada');
+                return;
+            }
+
+            if (profile.role !== 'manager' && profile.role !== 'admin') {
+                alert('Acesso negado. Apenas gestores podem acessar esta página.');
+                window.location.href = '/dashboard.html';
+                return;
+            }
+
+            currentFranchiseId = profile.franchise_id;
+            document.getElementById('franchiseName').textContent = profile.franchises?.name || 'Franquia';
+
+            await loadUsers();
+        }
+
+        async function loadUsers() {
+            const { data: users } = await supabase
+                .from('user_profiles')
+                .select(`*, user_stores (stores (id, name))`)
+                .eq('franchise_id', currentFranchiseId)
+                .eq('status', 'approved')
+                .neq('role', 'admin');
+
+            allUsers = users?.map(u => ({
+                ...u,
+                stores: u.user_stores?.map(us => us.stores) || []
+            })) || [];
+
+            renderUsers();
+        }
+
+        function renderUsers() {
+            const container = document.getElementById('usersList');
+            if (allUsers.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-8">Nenhum usuário encontrado</p>';
+                return;
+            }
+
+            container.innerHTML = allUsers.map(user => {
+                const roleColors = { manager: 'bg-purple-100 text-purple-700', store_user: 'bg-blue-100 text-blue-700' };
+                const roleNames = { manager: 'Gestor', store_user: 'Operador' };
+                const storeNames = user.role === 'manager' ? 'Todas as lojas' : user.stores.map(s => s.name).join(', ') || 'Sem loja';
+
+                return `
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-800">${user.full_name || 'Sem nome'}</p>
+                            <p class="text-sm text-slate-500">${user.email}</p>
+                            <p class="text-xs text-slate-400 mt-1">${storeNames}</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold ${roleColors[user.role]}">${roleNames[user.role]}</span>
+                            <button onclick="window.editUser('${user.id}')" class="p-2 hover:bg-slate-200 rounded-lg transition-all">
+                                <span class="material-symbols-outlined text-slate-600">edit</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.editUser = function (userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            editingUserId = userId;
+            document.getElementById('editUserName').value = user.full_name || '';
+            document.getElementById('currentRole').textContent = user.role === 'manager' ? 'Gestor' : 'Operador';
+
+            if (user.role === 'store_user') {
+                document.getElementById('promoteSection').classList.remove('hidden');
+                document.getElementById('demoteSection').classList.add('hidden');
+            } else {
+                document.getElementById('promoteSection').classList.add('hidden');
+                document.getElementById('demoteSection').classList.remove('hidden');
+            }
+
+            document.getElementById('editUserModal').classList.remove('hidden');
+        };
+
+        window.closeEditModal = function () {
+            document.getElementById('editUserModal').classList.add('hidden');
+            editingUserId = null;
+        };
+
+        window.saveUser = async function () {
+            const name = document.getElementById('editUserName').value.trim();
+            if (!name) {
+                alert('Digite o nome do usuário');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('user_profiles')
+                .update({ full_name: name })
+                .eq('id', editingUserId);
+
+            if (error) {
+                alert('Erro ao atualizar usuário');
+                return;
+            }
+
+            alert('Usuário atualizado com sucesso!');
+            closeEditModal();
+            loadUsers();
+        };
+
+        window.promoteUser = async function () {
+            if (!confirm('Tem certeza que deseja promover este usuário a Gestor?')) return;
+
+            const { error } = await supabase
+                .from('user_profiles')
+                .update({ role: 'manager' })
+                .eq('id', editingUserId);
+
+            if (error) {
+                alert('Erro ao promover usuário');
+                return;
+            }
+
+            alert('Usuário promovido a Gestor!');
+            closeEditModal();
+            loadUsers();
+        };
+
+        window.demoteUser = async function () {
+            if (!confirm('Tem certeza que deseja remover as permissões de Gestor?')) return;
+
+            const { error } = await supabase
+                .from('user_profiles')
+                .update({ role: 'store_user' })
+                .eq('id', editingUserId);
+
+            if (error) {
+                alert('Erro ao alterar permissão');
+                return;
+            }
+
+            alert('Usuário agora é um operador de loja.');
+            closeEditModal();
+            loadUsers();
+        };
+
+        window.showAddStoreModal = async function () {
+            // Load approved users for the select
+            const select = document.getElementById('newStoreManager');
+            select.innerHTML = '<option value="">Selecione um usuário...</option>';
+
+            allUsers.filter(u => u.status === 'approved').forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.email;
+                option.textContent = `${user.full_name} (${user.email})`;
+                select.appendChild(option);
+            });
+
+            document.getElementById('addStoreModal').classList.remove('hidden');
+        };
+
+        window.closeAddStoreModal = function () {
+            document.getElementById('addStoreModal').classList.add('hidden');
+            document.getElementById('newStoreName').value = '';
+            document.getElementById('newStoreManager').value = '';
+        };
+
+        window.createStore = async function () {
+            const name = document.getElementById('newStoreName').value.trim();
+            const contactEmail = document.getElementById('newStoreManager').value;
+
+            if (!name) {
+                alert('Digite o nome da loja');
+                return;
+            }
+
+            if (!contactEmail) {
+                alert('Selecione um responsável');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('stores')
+                .insert([{
+                    name: name,
+                    franchise_id: currentFranchiseId,
+                    contact_email: contactEmail
+                }]);
+
+            if (error) {
+                alert('Erro ao criar loja: ' + error.message);
+                return;
+            }
+
+            alert('Loja criada com sucesso!');
+            closeAddStoreModal();
+        };
+
+        loadData();
+    </script>
+</body>
+
+</html>
