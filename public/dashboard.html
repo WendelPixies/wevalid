@@ -124,9 +124,16 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="bg-white rounded-2xl shadow-lg p-6 fade-in card-hover">
-                <div class="flex items-center gap-3 mb-6">
-                    <span class="material-symbols-outlined text-purple-600 text-3xl">badge</span>
-                    <h2 class="text-2xl font-bold text-slate-800">Funcionários</h2>
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-purple-600 text-3xl">badge</span>
+                        <h2 class="text-2xl font-bold text-slate-800">Funcionários</h2>
+                    </div>
+                    <button id="manageUsersBtn" onclick="window.location.href='/manage-users.html'"
+                        class="hidden flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-all text-sm">
+                        <span class="material-symbols-outlined text-lg">manage_accounts</span>
+                        Gerenciar
+                    </button>
                 </div>
                 <div id="employeesList" class="space-y-3 max-h-96 overflow-y-auto">
                     <p class="text-center text-slate-400 py-8">Carregando...</p>
@@ -212,6 +219,11 @@
 
             document.getElementById('franchiseName').textContent = profile.franchises?.name || 'Franquia';
 
+            // Show manage button for managers and admins
+            if (profile.role === 'manager' || profile.role === 'admin') {
+                document.getElementById('manageUsersBtn').classList.remove('hidden');
+            }
+
             const { data: stores } = await supabase
                 .from('stores')
                 .select('*')
@@ -294,14 +306,26 @@
             renderTransferSuggestions(allProducts);
         }
 
-        function renderEmployees(employees) {
+        async function renderEmployees(employees) {
             const container = document.getElementById('employeesList');
-            if (employees.length === 0) {
+
+            // Filter out admins if current user is not admin
+            const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('role')
+                .eq('id', currentUser.id)
+                .single();
+
+            const filteredEmployees = profile?.role === 'admin'
+                ? employees
+                : employees.filter(emp => emp.role !== 'admin');
+
+            if (filteredEmployees.length === 0) {
                 container.innerHTML = '<p class="text-center text-slate-400 py-8">Nenhum funcionário encontrado</p>';
                 return;
             }
 
-            container.innerHTML = employees.map(emp => {
+            container.innerHTML = filteredEmployees.map(emp => {
                 const roleColors = { admin: 'bg-red-100 text-red-700', manager: 'bg-purple-100 text-purple-700', store_user: 'bg-blue-100 text-blue-700' };
                 const roleNames = { admin: 'Administrador', manager: 'Gestor', store_user: 'Operador' };
                 const storeNames = emp.role === 'manager' ? 'Todas as lojas' : emp.stores.map(s => s.name).join(', ') || 'Sem loja';
@@ -327,7 +351,8 @@
             }
 
             container.innerHTML = products.slice(0, 20).map(product => {
-                const expiryDate = new Date(product.expiry_date);
+                // Parse date in São Paulo timezone (UTC-3)
+                const expiryDate = new Date(product.expiry_date + 'T00:00:00-03:00');
                 const today = new Date();
                 const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
                 let urgencyColor = 'text-green-600';
@@ -345,7 +370,7 @@
                             <span class="text-lg font-bold text-slate-700">×${product.quantity}</span>
                         </div>
                         <div class="flex justify-between items-center text-sm">
-                            <span class="${urgencyColor}">${expiryDate.toLocaleDateString('pt-BR')} ${daysUntilExpiry > 0 ? `(${daysUntilExpiry}d)` : '(Vencido)'}</span>
+                            <span class="${urgencyColor}">${expiryDate.toLocaleDateString('pt-BR')} ${daysUntilExpiry > 0 ? `(${daysUntilExpiry} ${daysUntilExpiry === 1 ? 'dia' : 'dias'})` : '(Vencido)'}</span>
                             <span class="font-bold text-green-600">R$ ${(product.total_cost || 0).toFixed(2)}</span>
                         </div>
                     </div>
@@ -392,7 +417,7 @@
             const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
 
             const expiringProducts = products.filter(p => {
-                const expiryDate = new Date(p.expiry_date);
+                const expiryDate = new Date(p.expiry_date + 'T00:00:00-03:00');
                 return expiryDate >= today && expiryDate <= sevenDaysFromNow;
             });
 
@@ -422,7 +447,7 @@
             }
 
             container.innerHTML = suggestions.map(suggestion => {
-                const expiryDate = new Date(suggestion.product.expiry_date);
+                const expiryDate = new Date(suggestion.product.expiry_date + 'T00:00:00-03:00');
                 const daysUntilExpiry = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
 
                 return `
@@ -434,7 +459,7 @@
                                 <p class="text-sm text-slate-600 mb-2">
                                     <span class="font-semibold">Origem:</span> ${suggestion.product.store_name} | 
                                     <span class="font-semibold">Quantidade:</span> ${suggestion.product.quantity} unidades | 
-                                    <span class="font-semibold text-red-600">Vence em ${daysUntilExpiry} dias</span>
+                                    <span class="font-semibold text-red-600">Vence em ${daysUntilExpiry} ${daysUntilExpiry === 1 ? 'dia' : 'dias'}</span>
                                 </p>
                                 <div class="flex flex-wrap gap-2">
                                     <span class="text-xs font-semibold text-slate-600">Transferir para:</span>
