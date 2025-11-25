@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -32,7 +32,7 @@
         <div class="container mx-auto px-4 py-6">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <button onclick="window.location.href='/dashboard.html'"
+                    <button onclick="window.location.href='/dash.html'"
                         class="hover:bg-white/20 p-2 rounded-lg transition-all">
                         <span class="material-symbols-outlined">arrow_back</span>
                     </button>
@@ -60,6 +60,18 @@
                     Nova Loja
                 </button>
             </div>
+
+            <!-- Pending Users Section -->
+            <div id="pendingSection" class="mb-8 hidden">
+                <h3 class="text-lg font-bold text-amber-600 mb-3 flex items-center gap-2">
+                    <span class="material-symbols-outlined">warning</span>
+                    Solicitações Pendentes
+                </h3>
+                <div id="pendingList" class="space-y-3">
+                    <!-- Pending users will be injected here -->
+                </div>
+            </div>
+
             <div id="usersList" class="space-y-4">
                 <p class="text-center text-slate-400 py-8">Carregando...</p>
             </div>
@@ -139,6 +151,48 @@
         </div>
     </div>
 
+    <!-- Modal: Aprovar Usuário -->
+    <div id="approveUserModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 class="text-xl font-bold text-slate-800 mb-4">Aprovar Usuário</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Usuário</label>
+                    <p id="approveUserName" class="text-lg font-semibold text-slate-800"></p>
+                    <p id="approveUserEmail" class="text-sm text-slate-500"></p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Função</label>
+                    <select id="approveUserRole" onchange="toggleStoreSelection()"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none">
+                        <option value="store_user">Operador de Loja</option>
+                        <option value="manager">Gestor da Franquia</option>
+                    </select>
+                </div>
+
+                <div id="storeSelectionField">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Loja(s)</label>
+                    <div id="storesCheckboxList"
+                        class="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3 space-y-2">
+                        <!-- Stores will be injected here -->
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">Selecione pelo menos uma loja para o operador.</p>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeApproveModal()"
+                    class="flex-1 px-4 py-3 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg transition-all">
+                    Cancelar
+                </button>
+                <button onclick="confirmApproval()"
+                    class="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all">
+                    Aprovar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
@@ -182,7 +236,7 @@
 
             if (profile.role !== 'manager' && profile.role !== 'admin') {
                 alert('Acesso negado. Apenas gestores podem acessar esta página.');
-                window.location.href = '/dashboard.html';
+                window.location.href = '/dash.html';
                 return;
             }
 
@@ -190,22 +244,69 @@
             document.getElementById('franchiseName').textContent = profile.franchises?.name || 'Franquia';
 
             await loadUsers();
+            await loadStores();
+        }
+
+        async function loadStores() {
+            const { data: stores } = await supabase
+                .from('stores')
+                .select('*')
+                .eq('franchise_id', currentFranchiseId)
+                .order('name');
+
+            window.franchiseStores = stores || [];
         }
 
         async function loadUsers() {
-            const { data: users } = await supabase
+            // Fetch Approved Users
+            const { data: approvedUsers } = await supabase
                 .from('user_profiles')
                 .select(`*, user_stores (stores (id, name))`)
                 .eq('franchise_id', currentFranchiseId)
                 .eq('status', 'approved')
                 .neq('role', 'admin');
 
-            allUsers = users?.map(u => ({
+            // Fetch Pending Users
+            const { data: pendingUsers } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('franchise_id', currentFranchiseId)
+                .eq('status', 'pending');
+
+            allUsers = approvedUsers?.map(u => ({
                 ...u,
                 stores: u.user_stores?.map(us => us.stores) || []
             })) || [];
 
+            window.pendingUsersList = pendingUsers || [];
+
             renderUsers();
+            renderPendingUsers();
+        }
+
+        function renderPendingUsers() {
+            const container = document.getElementById('pendingList');
+            const section = document.getElementById('pendingSection');
+
+            if (window.pendingUsersList.length === 0) {
+                section.classList.add('hidden');
+                return;
+            }
+
+            section.classList.remove('hidden');
+            container.innerHTML = window.pendingUsersList.map(user => `
+                <div class="flex items-center justify-between p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                    <div>
+                        <p class="font-bold text-slate-800">${user.full_name || 'Usuário Pendente'}</p>
+                        <p class="text-sm text-slate-500">${user.email}</p>
+                        <p class="text-xs text-amber-600 mt-1 font-medium">Aguardando aprovação</p>
+                    </div>
+                    <button onclick="window.openApproveModal('${user.id}')" 
+                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg transition-all shadow-sm">
+                        Aprovar
+                    </button>
+                </div>
+            `).join('');
         }
 
         function renderUsers() {
@@ -370,6 +471,97 @@
 
             alert('Loja criada com sucesso!');
             closeAddStoreModal();
+        };
+
+        // --- Approval Logic ---
+        let approvingUserId = null;
+
+        window.openApproveModal = function (userId) {
+            const user = window.pendingUsersList.find(u => u.id === userId);
+            if (!user) return;
+
+            approvingUserId = userId;
+            document.getElementById('approveUserName').textContent = user.full_name || 'Sem nome';
+            document.getElementById('approveUserEmail').textContent = user.email;
+
+            // Reset form
+            document.getElementById('approveUserRole').value = 'store_user';
+            toggleStoreSelection();
+
+            // Render stores checkboxes
+            const storesContainer = document.getElementById('storesCheckboxList');
+            if (window.franchiseStores.length === 0) {
+                storesContainer.innerHTML = '<p class="text-sm text-red-500">Nenhuma loja cadastrada nesta franquia.</p>';
+            } else {
+                storesContainer.innerHTML = window.franchiseStores.map(store => `
+                    <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer">
+                        <input type="checkbox" name="approveStore" value="${store.id}" class="rounded text-purple-600 focus:ring-purple-500">
+                        <span class="text-sm text-slate-700">${store.name}</span>
+                    </label>
+                `).join('');
+            }
+
+            document.getElementById('approveUserModal').classList.remove('hidden');
+        };
+
+        window.closeApproveModal = function () {
+            document.getElementById('approveUserModal').classList.add('hidden');
+            approvingUserId = null;
+        };
+
+        window.toggleStoreSelection = function () {
+            const role = document.getElementById('approveUserRole').value;
+            const storeField = document.getElementById('storeSelectionField');
+            if (role === 'manager') {
+                storeField.classList.add('hidden');
+            } else {
+                storeField.classList.remove('hidden');
+            }
+        };
+
+        window.confirmApproval = async function () {
+            const role = document.getElementById('approveUserRole').value;
+            const selectedStores = Array.from(document.querySelectorAll('input[name="approveStore"]:checked')).map(cb => cb.value);
+
+            if (role === 'store_user' && selectedStores.length === 0) {
+                alert('Selecione pelo menos uma loja para o operador.');
+                return;
+            }
+
+            try {
+                // 1. Update User Profile
+                const { error: updateError } = await supabase
+                    .from('user_profiles')
+                    .update({
+                        status: 'approved',
+                        role: role
+                    })
+                    .eq('id', approvingUserId);
+
+                if (updateError) throw updateError;
+
+                // 2. If Store User, Insert Store Links
+                if (role === 'store_user' && selectedStores.length > 0) {
+                    const storeLinks = selectedStores.map(storeId => ({
+                        user_id: approvingUserId,
+                        store_id: storeId
+                    }));
+
+                    const { error: linkError } = await supabase
+                        .from('user_stores')
+                        .insert(storeLinks);
+
+                    if (linkError) throw linkError;
+                }
+
+                alert('Usuário aprovado com sucesso!');
+                closeApproveModal();
+                loadUsers();
+
+            } catch (error) {
+                console.error(error);
+                alert('Erro ao aprovar usuário: ' + error.message);
+            }
         };
 
         loadData();

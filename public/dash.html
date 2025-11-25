@@ -120,8 +120,12 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <!-- Employees -->
             <div class="bg-white rounded-lg shadow">
-                <div class="p-4 border-b">
+                <div class="p-4 border-b flex items-center justify-between">
                     <h2 class="text-lg font-semibold text-gray-800">Funcionários</h2>
+                    <button id="manageUsersBtn" onclick="window.location.href='/manage-users.html'"
+                        class="hidden px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-all">
+                        Gerenciar
+                    </button>
                 </div>
                 <div id="employeesList" class="p-4 max-h-96 overflow-y-auto">
                     <p class="text-center text-gray-400 py-8">Carregando...</p>
@@ -362,6 +366,7 @@
             if (profile.role === 'admin') {
                 document.getElementById('adminControls').classList.remove('hidden');
                 document.getElementById('franchiseFilterContainer').classList.remove('hidden');
+                document.getElementById('manageUsersBtn').classList.remove('hidden');
 
                 // Load all franchises for filters and modals
                 const { data: franchises } = await supabase.from('franchises').select('*').order('name');
@@ -373,6 +378,10 @@
                 if (!profile.franchise_id) {
                     alert('Usuário sem franquia associada');
                     return;
+                }
+                // Show manage button for managers
+                if (profile.role === 'manager') {
+                    document.getElementById('manageUsersBtn').classList.remove('hidden');
                 }
                 const { data: stores } = await supabase.from('stores').select('*').eq('franchise_id', profile.franchise_id).order('name');
                 allStores = stores || [];
@@ -399,127 +408,6 @@
                 stores: e.user_stores?.map(us => us.stores) || []
             })) || [];
 
-            // Load Products
-            query = supabase.from('inventory_items').select('*, products(description, category, unit_cost), stores(name, pdv_code)').order('expiry_date', { ascending: true });
-            if (selectedFranchise !== 'all') query = query.eq('franchise_id', selectedFranchise);
-            const { data: products } = await query;
-
-            allProducts = products?.map(p => ({
-                ...p,
-                product_description: p.products?.description,
-                category: p.products?.category,
-                store_name: p.stores?.name,
-                store_pdv: p.stores?.pdv_code
-            })) || [];
-
-            updateDashboard();
-        }
-
-        // --- Rendering ---
-        function updateDashboard() {
-            const selectedStore = document.getElementById('storeFilter').value;
-            let filteredEmployees = allEmployees;
-            let filteredProducts = allProducts;
-
-            if (selectedStore !== 'all') {
-                filteredEmployees = allEmployees.filter(e =>
-                    e.role === 'manager' || e.stores.some(s => s.id === selectedStore)
-                );
-                filteredProducts = allProducts.filter(p => p.store_id === selectedStore);
-            }
-
-            document.getElementById('totalUsers').textContent = filteredEmployees.length;
-            document.getElementById('totalProducts').textContent = filteredProducts.length;
-
-            const today = new Date();
-            const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-            const expiring = filteredProducts.filter(p => {
-                const expiryDate = new Date(p.expiry_date);
-                return expiryDate >= today && expiryDate <= sevenDaysFromNow;
-            });
-            document.getElementById('expiringProducts').textContent = expiring.length;
-
-            const totalCost = filteredProducts.reduce((sum, p) => sum + (p.total_cost || 0), 0);
-            document.getElementById('totalCost').textContent = `R$ ${totalCost.toFixed(2)}`;
-
-            renderEmployees(filteredEmployees);
-            renderProducts(filteredProducts);
-            renderCategoryRanking(filteredProducts);
-
-            // Always pass allProducts to Detailed Stock to allow comparison across all stores (PDVs)
-            // regardless of the single store filter applied to the cards above.
-            renderDetailedStock(allProducts);
-        }
-
-        function renderEmployees(employees) {
-            const container = document.getElementById('employeesList');
-            if (employees.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhum funcionário encontrado</p>';
-                return;
-            }
-
-            container.innerHTML = employees.map(emp => {
-                const roleColors = { admin: 'bg-red-100 text-red-700', manager: 'bg-purple-100 text-purple-700', store_user: 'bg-blue-100 text-blue-700' };
-                const storeNames = emp.role === 'manager' ? 'Todas as lojas' : emp.stores.map(s => s.name).join(', ') || 'Sem loja';
-
-                // Edit button only for admins
-                const editBtn = currentProfile.role === 'admin' ? `
-                    <button onclick="openUserModal('${emp.id}')" class="ml-2 text-gray-400 hover:text-purple-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                        </svg>
-                    </button>
-                ` : '';
-
-                return `
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
-                        <div class="flex-1">
-                            <div class="flex items-center">
-                                <p class="font-semibold text-gray-800">${emp.full_name || 'Sem nome'}</p>
-                                ${editBtn}
-                            </div>
-                            <p class="text-sm text-gray-500">${emp.email}</p>
-                            <p class="text-xs text-gray-400">${storeNames}</p>
-                        </div>
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${roleColors[emp.role]}">${getRoleName(emp.role)}</span>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderProducts(products) {
-            const container = document.getElementById('productsList');
-            if (products.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhum produto encontrado</p>';
-                return;
-            }
-            container.innerHTML = products.slice(0, 20).map(product => {
-                const expiryDate = new Date(product.expiry_date);
-                const today = new Date();
-                const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
-                let urgencyColor = 'text-green-600';
-                if (daysUntilExpiry <= 7) urgencyColor = 'text-red-600 font-bold';
-                else if (daysUntilExpiry <= 30) urgencyColor = 'text-amber-600';
-                return `
-                    <div class="p-3 bg-gray-50 rounded-lg mb-2">
-                        <div class="flex justify-between items-start mb-1">
-                            <div class="flex-1">
-                                <p class="font-semibold text-gray-800">${product.product_description || 'Sem descrição'}</p>
-                                <p class="text-sm text-gray-500">${product.product_code} | ${product.store_name}</p>
-                            </div>
-                            <span class="text-lg font-bold text-gray-700">×${product.quantity}</span>
-                        </div>
-                        <div class="flex justify-between items-center text-sm">
-                            <span class="${urgencyColor}">${expiryDate.toLocaleDateString('pt-BR')} (${daysUntilExpiry}d)</span>
-                            <span class="font-bold text-green-600">R$ ${(product.total_cost || 0).toFixed(2)}</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderCategoryRanking(products) {
-            const container = document.getElementById('categoryRanking');
             if (products.length === 0) {
                 container.innerHTML = '<p class="text-center text-gray-400 py-8 col-span-3">Nenhum dado disponível</p>';
                 return;
