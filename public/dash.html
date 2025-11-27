@@ -31,9 +31,16 @@
                         <p class="text-sm text-purple-100" id="userInfo">Carregando...</p>
                     </div>
                 </div>
-                <button onclick="logout()" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all">
-                    Sair
-                </button>
+                <div class="flex gap-3">
+                    <button id="adminPanelBtn" onclick="window.location.href='/admin-panel.html'"
+                        class="hidden px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all">
+                        Painel Admin
+                    </button>
+                    <button onclick="logout()"
+                        class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all">
+                        Sair
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -170,6 +177,8 @@
 
             // Admin: load all franchises
             if (profile.role === 'admin') {
+                document.getElementById('adminPanelBtn')?.classList.remove('hidden');
+
                 const { data: franchises } = await supabase
                     .from('franchises')
                     .select('*')
