@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - WeValid</title>
+    <link rel="icon" type="image/png" href="/perfume_icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .tab-active {
+            border-bottom: 3px solid #667eea;
+            color: #667eea;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img src="/perfume_icon.png" alt="WeValid" class="w-10 h-10 invert">
+                    <div>
+                        <h1 class="text-xl font-bold">Painel Administrativo</h1>
+                        <p class="text-sm text-purple-100" id="userInfo">Carregando...</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="window.location.href='/dash.html'"
+                        class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">dashboard</span>
+                        Dashboard
+                    </button>
+                    <button onclick="logout()"
+                        class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all">
+                        Sair
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="flex border-b">
+                <button onclick="switchTab('franchises')" id="tab-franchises"
+                    class="px-6 py-4 font-semibold transition-all tab-active">
+                    Franquias
+                </button>
+                <button onclick="switchTab('users')" id="tab-users"
+                    class="px-6 py-4 font-semibold transition-all text-gray-600 hover:text-gray-800">
+                    Usuários
+                </button>
+                <button onclick="switchTab('stores')" id="tab-stores"
+                    class="px-6 py-4 font-semibold transition-all text-gray-600 hover:text-gray-800">
+                    Lojas
+                </button>
+            </div>
+        </div>
+
+        <!-- Franchises Tab -->
+        <div id="content-franchises" class="tab-content">
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">Gerenciar Franquias</h2>
+                    <button onclick="openFranchiseModal()"
+                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2">
+                        <span class="material-symbols-outlined">add</span>
+                        Nova Franquia
+                    </button>
+                </div>
+                <div id="franchisesList" class="space-y-3">
+                    <p class="text-center text-gray-400 py-8">Carregando...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="content-users" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Gerenciar Usuários</h2>
+
+                <!-- Pending Users -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">Usuários Pendentes</h3>
+                    <div id="pendingUsersList" class="space-y-3">
+                        <p class="text-center text-gray-400 py-4">Nenhum usuário pendente</p>
+                    </div>
+                </div>
+
+                <!-- All Users -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">Todos os Usuários</h3>
+                    <div id="allUsersList" class="space-y-3">
+                        <p class="text-center text-gray-400 py-8">Carregando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stores Tab -->
+        <div id="content-stores" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">Gerenciar Lojas</h2>
+                    <button onclick="openStoreModal()"
+                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2">
+                        <span class="material-symbols-outlined">add</span>
+                        Nova Loja
+                    </button>
+                </div>
+                <div id="storesList" class="space-y-3">
+                    <p class="text-center text-gray-400 py-8">Carregando...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Franchise Modal -->
+    <div id="franchiseModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4" id="franchiseModalTitle">Nova Franquia</h3>
+            <form id="franchiseForm" class="space-y-4">
+                <input type="hidden" id="franchiseId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome da Franquia</label>
+                    <input type="text" id="franchiseName" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div class="flex gap-3">
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg">
+                        Salvar
+                    </button>
+                    <button type="button" onclick="closeFranchiseModal()"
+                        class="flex-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Edit Modal -->
+    <div id="userModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4">Editar Usuário</h3>
+            <form id="userForm" class="space-y-4">
+                <input type="hidden" id="userId">
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome</label>
+                    <input type="text" id="userFullName" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" id="userEmail" disabled
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Perfil (Role)</label>
+                    <select id="userRole" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <option value="store_user">Operador</option>
+                        <option value="manager">Gestor</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Franquia</label>
+                    <select id="userFranchise" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <option value="">Selecione uma franquia</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select id="userStatus" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <option value="pending">Pendente</option>
+                        <option value="approved">Aprovado</option>
+                        <option value="rejected">Rejeitado</option>
+                    </select>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg">
+                        Salvar
+                    </button>
+                    <button type="button" onclick="closeUserModal()"
+                        class="flex-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Store Modal -->
+    <div id="storeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4" id="storeModalTitle">Nova Loja</h3>
+            <form id="storeForm" class="space-y-4">
+                <input type="hidden" id="storeId">
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome da Loja</label>
+                    <input type="text" id="storeName" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Código PDV</label>
+                    <input type="text" id="storeCode" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Franquia</label>
+                    <select id="storeFranchise" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <option value="">Selecione uma franquia</option>
+                    </select>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg">
+                        Salvar
+                    </button>
+                    <button type="button" onclick="closeStoreModal()"
+                        class="flex-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const supabase = createClient(
+            'https://acensrxfxzqozakkklmy.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZW5zcnhmeHpxb3pha2trbG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2ODc2NDUsImV4cCI6MjA3OTI2MzY0NX0.rRsWLCmIcoyKkE5Qh_et53wO_xzLriOjrsfU0Rs85Lo'
+        );
+
+        let currentUser = null;
+        let currentProfile = null;
+        let allFranchises = [];
+
+        // Check auth and admin role
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.href = '/dash-login.html';
+                return null;
+            }
+
+            const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+
+            if (!profile || profile.role !== 'admin') {
+                alert('Acesso negado. Apenas administradores podem acessar esta página.');
+                window.location.href = '/dash.html';
+                return null;
+            }
+
+            currentProfile = profile;
+            document.getElementById('userInfo').textContent = `${profile.full_name || profile.email} - Administrador`;
+            return session.user;
+        }
+
+        // Logout
+        window.logout = async function () {
+            await supabase.auth.signOut();
+            window.location.href = '/dash-login.html';
+        };
+
+        // Tab switching
+        window.switchTab = function (tab) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('[id^="tab-"]').forEach(el => {
+                el.classList.remove('tab-active', 'text-purple-600');
+                el.classList.add('text-gray-600');
+            });
+
+            // Show selected tab
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.add('tab-active', 'text-purple-600');
+        };
+
+        // Load franchises
+        async function loadFranchises() {
+            const { data: franchises, error } = await supabase
+                .from('franchises')
+                .select('*')
+                .order('name');
+
+            if (error) {
+                console.error('Error loading franchises:', error);
+                return;
+            }
+
+            allFranchises = franchises || [];
+            renderFranchises(franchises);
+            populateFranchiseSelects();
+        }
+
+        function renderFranchises(franchises) {
+            const container = document.getElementById('franchisesList');
+            if (!franchises || franchises.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhuma franquia cadastrada</p>';
+                return;
+            }
+
+            container.innerHTML = franchises.map(f => `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-semibold text-gray-800">${f.name}</p>
+                        <p class="text-sm text-gray-500">ID: ${f.id}</p>
+                    </div>
+                    <button onclick="editFranchise('${f.id}')" 
+                        class="px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-sm">
+                        Editar
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Franchise modal
+        window.openFranchiseModal = function () {
+            document.getElementById('franchiseModalTitle').textContent = 'Nova Franquia';
+            document.getElementById('franchiseForm').reset();
+            document.getElementById('franchiseId').value = '';
+            document.getElementById('franchiseModal').classList.remove('hidden');
+        };
+
+        window.closeFranchiseModal = function () {
+            document.getElementById('franchiseModal').classList.add('hidden');
+        };
+
+        window.editFranchise = function (id) {
+            const franchise = allFranchises.find(f => f.id === id);
+            if (!franchise) return;
+
+            document.getElementById('franchiseModalTitle').textContent = 'Editar Franquia';
+            document.getElementById('franchiseId').value = franchise.id;
+            document.getElementById('franchiseName').value = franchise.name;
+            document.getElementById('franchiseModal').classList.remove('hidden');
+        };
+
+        document.getElementById('franchiseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('franchiseId').value;
+            const name = document.getElementById('franchiseName').value;
+
+            try {
+                if (id) {
+                    // Update
+                    const { error } = await supabase
+                        .from('franchises')
+                        .update({ name })
+                        .eq('id', id);
+                    if (error) throw error;
+                } else {
+                    // Insert
+                    const { error } = await supabase
+                        .from('franchises')
+                        .insert([{ name }]);
+                    if (error) throw error;
+                }
+
+                closeFranchiseModal();
+                await loadFranchises();
+                alert('Franquia salva com sucesso!');
+            } catch (error) {
+                console.error('Error saving franchise:', error);
+                alert('Erro ao salvar franquia: ' + error.message);
+            }
+        });
+
+        // Load users
+        async function loadUsers() {
+            const { data: users, error } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error loading users:', error);
+                return;
+            }
+
+            const pending = users.filter(u => u.status === 'pending');
+            const approved = users.filter(u => u.status !== 'pending');
+
+            renderPendingUsers(pending);
+            renderAllUsers(approved);
+        }
+
+        function renderPendingUsers(users) {
+            const container = document.getElementById('pendingUsersList');
+            if (!users || users.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-4">Nenhum usuário pendente</p>';
+                return;
+            }
+
+            container.innerHTML = users.map(u => `
+                <div class="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div>
+                        <p class="font-semibold text-gray-800">${u.full_name || 'Sem nome'}</p>
+                        <p class="text-sm text-gray-600">${u.email}</p>
+                    </div>
+                    <button onclick="editUser('${u.id}')" 
+                        class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm">
+                        Aprovar/Editar
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderAllUsers(users) {
+            const container = document.getElementById('allUsersList');
+            if (!users || users.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhum usuário encontrado</p>';
+                return;
+            }
+
+            const roleColors = {
+                admin: 'bg-red-100 text-red-700',
+                manager: 'bg-purple-100 text-purple-700',
+                store_user: 'bg-blue-100 text-blue-700'
+            };
+
+            const roleNames = {
+                admin: 'Administrador',
+                manager: 'Gestor',
+                store_user: 'Operador'
+            };
+
+            container.innerHTML = users.map(u => `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div class="flex-1">
+                        <p class="font-semibold text-gray-800">${u.full_name || 'Sem nome'}</p>
+                        <p class="text-sm text-gray-600">${u.email}</p>
+                        <p class="text-xs text-gray-500">Franquia: ${u.franchise_id || 'Não associado'}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${roleColors[u.role] || 'bg-gray-100 text-gray-700'}">
+                            ${roleNames[u.role] || u.role}
+                        </span>
+                        <button onclick="editUser('${u.id}')" 
+                            class="px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-sm">
+                            Editar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // User modal
+        window.editUser = async function (id) {
+            const { data: user, error } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error || !user) {
+                alert('Erro ao carregar usuário');
+                return;
+            }
+
+            document.getElementById('userId').value = user.id;
+            document.getElementById('userFullName').value = user.full_name || '';
+            document.getElementById('userEmail').value = user.email;
+            document.getElementById('userRole').value = user.role || 'store_user';
+            document.getElementById('userFranchise').value = user.franchise_id || '';
+            document.getElementById('userStatus').value = user.status || 'pending';
+            document.getElementById('userModal').classList.remove('hidden');
+        };
+
+        window.closeUserModal = function () {
+            document.getElementById('userModal').classList.add('hidden');
+        };
+
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('userId').value;
+            const fullName = document.getElementById('userFullName').value;
+            const role = document.getElementById('userRole').value;
+            const franchiseId = document.getElementById('userFranchise').value;
+            const status = document.getElementById('userStatus').value;
+
+            try {
+                const { error } = await supabase
+                    .from('user_profiles')
+                    .update({
+                        full_name: fullName,
+                        role: role,
+                        franchise_id: franchiseId || null,
+                        status: status
+                    })
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                closeUserModal();
+                await loadUsers();
+                alert('Usuário atualizado com sucesso!');
+            } catch (error) {
+                console.error('Error updating user:', error);
+                alert('Erro ao atualizar usuário: ' + error.message);
+            }
+        });
+
+        // Load stores
+        async function loadStores() {
+            const { data: stores, error } = await supabase
+                .from('stores')
+                .select('*, franchises(name)')
+                .order('name');
+
+            if (error) {
+                console.error('Error loading stores:', error);
+                return;
+            }
+
+            renderStores(stores);
+        }
+
+        function renderStores(stores) {
+            const container = document.getElementById('storesList');
+            if (!stores || stores.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhuma loja cadastrada</p>';
+                return;
+            }
+
+            container.innerHTML = stores.map(s => `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-semibold text-gray-800">${s.name}</p>
+                        <p class="text-sm text-gray-600">Código: ${s.code || 'N/A'} | Franquia: ${s.franchises?.name || 'N/A'}</p>
+                    </div>
+                    <button onclick="editStore('${s.id}')" 
+                        class="px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-sm">
+                        Editar
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Store modal
+        window.openStoreModal = function () {
+            document.getElementById('storeModalTitle').textContent = 'Nova Loja';
+            document.getElementById('storeForm').reset();
+            document.getElementById('storeId').value = '';
+            document.getElementById('storeModal').classList.remove('hidden');
+        };
+
+        window.closeStoreModal = function () {
+            document.getElementById('storeModal').classList.add('hidden');
+        };
+
+        window.editStore = async function (id) {
+            const { data: store, error } = await supabase
+                .from('stores')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error || !store) {
+                alert('Erro ao carregar loja');
+                return;
+            }
+
+            document.getElementById('storeModalTitle').textContent = 'Editar Loja';
+            document.getElementById('storeId').value = store.id;
+            document.getElementById('storeName').value = store.name;
+            document.getElementById('storeCode').value = store.code || '';
+            document.getElementById('storeFranchise').value = store.franchise_id || '';
+            document.getElementById('storeModal').classList.remove('hidden');
+        };
+
+        document.getElementById('storeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('storeId').value;
+            const name = document.getElementById('storeName').value;
+            const code = document.getElementById('storeCode').value;
+            const franchiseId = document.getElementById('storeFranchise').value;
+
+            try {
+                if (id) {
+                    // Update
+                    const { error } = await supabase
+                        .from('stores')
+                        .update({ name, code, franchise_id: franchiseId })
+                        .eq('id', id);
+                    if (error) throw error;
+                } else {
+                    // Insert
+                    const { error } = await supabase
+                        .from('stores')
+                        .insert([{ name, code, franchise_id: franchiseId }]);
+                    if (error) throw error;
+                }
+
+                closeStoreModal();
+                await loadStores();
+                alert('Loja salva com sucesso!');
+            } catch (error) {
+                console.error('Error saving store:', error);
+                alert('Erro ao salvar loja: ' + error.message);
+            }
+        });
+
+        // Populate franchise selects
+        function populateFranchiseSelects() {
+            const selects = [
+                document.getElementById('userFranchise'),
+                document.getElementById('storeFranchise')
+            ];
+
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Selecione uma franquia</option>';
+                allFranchises.forEach(f => {
+                    const option = document.createElement('option');
+                    option.value = f.id;
+                    option.textContent = f.name;
+                    select.appendChild(option);
+                });
+                select.value = currentValue;
+            });
+        }
+
+        // Initialize
+        async function init() {
+            currentUser = await checkAuth();
+            if (!currentUser) return;
+
+            await loadFranchises();
+            await loadUsers();
+            await loadStores();
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
