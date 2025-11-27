@@ -207,19 +207,6 @@
             }
 
             const { data: profile } = await supabase
-                .from('user_profiles')
-                .select('*, franchises(name)')
-                .eq('id', currentUser.id)
-                .single();
-
-            if (!profile || !profile.franchise_id) {
-                alert('Usuário sem franquia associada');
-                return;
-            }
-
-            document.getElementById('franchiseName').textContent = profile.franchises?.name || 'Franquia';
-
-            // Show manage button for managers and admins
             if (profile.role === 'manager' || profile.role === 'admin') {
                 document.getElementById('manageUsersBtn').classList.remove('hidden');
             }
