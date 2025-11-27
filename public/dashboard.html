@@ -201,17 +201,6 @@
 
         async function loadData() {
             currentUser = await checkAuth();
-            if (!currentUser) {
-                document.getElementById('franchiseName').textContent = 'Não autenticado';
-                return;
-            }
-
-            const { data: profile } = await supabase
-            if (profile.role === 'manager' || profile.role === 'admin') {
-                document.getElementById('manageUsersBtn').classList.remove('hidden');
-            }
-
-            const { data: stores } = await supabase
                 .from('stores')
                 .select('*')
                 .eq('franchise_id', profile.franchise_id);
